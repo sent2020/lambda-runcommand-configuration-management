@@ -9,3 +9,4 @@ CodePipeline
 * Automate IAM role creation for Lambda function
 * Dynamically target instances for Run Command
 * Automate creation of CodePipeline
+* Instructions and packaging around Run Command
