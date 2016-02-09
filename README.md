@@ -1,6 +1,6 @@
 # GARLC
-GitHub
-Ansible
-Run Command
-Lambda
-CodePipeline
+GitHub  
+Ansible  
+Run Command  
+Lambda  
+CodePipeline  
