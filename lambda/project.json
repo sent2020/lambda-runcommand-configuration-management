@@ -1,0 +1,8 @@
+{
+  "name": "garlc",
+  "description": "Smells Like Configuration Management",
+  "memory": 128,
+  "timeout": 5,
+  "runtime": "python",
+  "role": "arn:aws:iam::575330773084:role/lambda_garlc"
+}
