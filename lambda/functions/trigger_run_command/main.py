@@ -25,6 +25,7 @@ def handle(event, context):
         Parameters={
             'commands': [
                 'cd /tmp',
+                'rm -rf garlc',
                 'git clone https://github.com/irlrobot/garlc.git',
                 'ansible-playbook -i "localhost," -c local garlc/ansible/playbook.yml'
             ],
