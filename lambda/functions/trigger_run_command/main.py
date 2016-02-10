@@ -3,7 +3,7 @@ Triggers Run Command on all instances with tag has_ssm_agent set to true,
 refreshes the git repository or clones it if it doesn't exist, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v1.1.0
+v1.2.0
 """
 from __future__ import print_function
 import logging
@@ -26,6 +26,21 @@ def log_event_and_context(event, context):
     LOGGER.info(event)
     LOGGER.info("====================================================")
 
+def codepipeline_sucess(codepipeline, job_id):
+    """
+    Puts CodePipeline Sucess Result
+    """
+    codepipeline.put_job_success_result(jobId=job_id)
+
+def codepipeline_failure(codepipeline, job_id, message):
+    """
+    Puts CodePipeline Failure Result
+    """
+    codepipeline.put_job_failure_result(
+        jobId=job_id,
+        failureDetails={'type': 'JobFailed', 'message': message}
+    )
+
 def handle(event, context):
     """
     Lambda main handler
@@ -33,16 +48,20 @@ def handle(event, context):
     log_event_and_context(event, context)
     ssm = boto3.client('ssm')
     ec2 = boto3.client('ec2')
+    codepipeline = boto3.client('codepipeline')
+
     filters = [{
         'Name': 'tag:has_ssm_agent',
         'Values': ['true', 'True']
     }]
     instances = ec2.describe_instances(Filters=filters)
+    job_id = event['CodePipeline.job']['id']
     instance_ids = []
+
     for instance in instances['Reservations']:
         instance_ids.append(instance['Instances'][0]['InstanceId'])
 
-    ssm.send_command(
+    ssm_request = ssm.send_command(
         InstanceIds=instance_ids,
         DocumentName='AWS-RunShellScript',
         TimeoutSeconds=60,
@@ -51,3 +70,10 @@ def handle(event, context):
             'executionTimeout': ['120']
         }
     )
+
+    # TODO
+    # Better handle ssm_request success and failure
+    if ssm_request:
+        codepipeline_sucess(codepipeline, job_id)
+    else:
+        codepipeline_failure(codepipeline, job_id, "Run Command Failed")
