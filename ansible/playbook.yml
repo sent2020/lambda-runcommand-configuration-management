@@ -4,6 +4,12 @@
   - name: Install required packages
     yum: name={{ item }} state=installed
     with_items:
+      - httpd
+  - name: Remove packages
+    yum: name={{ item }} state=absent
+    with_items:
       - nginx
-  - name:  Start nginx
-    service: name=nginx state=started enabled=yes
+  - name:  Start services
+    service: name={{ item }} state=started enabled=yes
+    with_items:
+      - httpd
