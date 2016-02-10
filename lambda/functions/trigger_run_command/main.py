@@ -45,35 +45,35 @@ def handle(event, context):
     """
     Lambda main handler
     """
-    log_event_and_context(event, context)
-    ssm = boto3.client('ssm')
-    ec2 = boto3.client('ec2')
-    codepipeline = boto3.client('codepipeline')
-
-    filters = [{
-        'Name': 'tag:has_ssm_agent',
-        'Values': ['true', 'True']
-    }]
-    instances = ec2.describe_instances(Filters=filters)
-    job_id = event['CodePipeline.job']['id']
-    instance_ids = []
-
-    for instance in instances['Reservations']:
-        instance_ids.append(instance['Instances'][0]['InstanceId'])
-
-    ssm_request = ssm.send_command(
-        InstanceIds=instance_ids,
-        DocumentName='AWS-RunShellScript',
-        TimeoutSeconds=60,
-        Parameters={
-            'commands': COMMANDS,
-            'executionTimeout': ['120']
-        }
-    )
-
     # TODO
-    # Better handle ssm_request success and failure
-    if ssm_request:
+    # Better error handling, this is awful!
+    try:
+        log_event_and_context(event, context)
+        ssm = boto3.client('ssm')
+        ec2 = boto3.client('ec2')
+        codepipeline = boto3.client('codepipeline')
+
+        filters = [{
+            'Name': 'tag:has_ssm_agent',
+            'Values': ['true', 'True']
+        }]
+        instances = ec2.describe_instances(Filters=filters)
+        job_id = event['CodePipeline.job']['id']
+        instance_ids = []
+
+        for instance in instances['Reservations']:
+            instance_ids.append(instance['Instances'][0]['InstanceId'])
+
+        ssm.send_command(
+            InstanceIds=instance_ids,
+            DocumentName='AWS-RunShellScript',
+            TimeoutSeconds=60,
+            Parameters={
+                'commands': COMMANDS,
+                'executionTimeout': ['120']
+            }
+        )
+
         codepipeline_sucess(codepipeline, job_id)
-    else:
-        codepipeline_failure(codepipeline, job_id, "Run Command Failed")
+    except Exception as err:
+        codepipeline_failure(codepipeline, job_id, err)
