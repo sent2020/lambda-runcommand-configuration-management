@@ -1,5 +1,5 @@
 # GARLC
-GitHub  
+Git  
 Ansible  
 Run Command  
 Lambda  
