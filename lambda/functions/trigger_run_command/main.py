@@ -3,7 +3,7 @@ Triggers Run Command on all instances with tag has_ssm_agent set to true,
 refreshes the git repository or clones it if it doesn't exist, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v1.2.0
+v1.2.1
 """
 from __future__ import print_function
 import logging
@@ -28,7 +28,7 @@ def log_event_and_context(event, context):
 
 def codepipeline_sucess(codepipeline, job_id):
     """
-    Puts CodePipeline Sucess Result
+    Puts CodePipeline Success Result
     """
     codepipeline.put_job_success_result(jobId=job_id)
 
