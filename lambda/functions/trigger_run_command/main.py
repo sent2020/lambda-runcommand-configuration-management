@@ -33,6 +33,7 @@ def codepipeline_sucess(job_id):
     """
     try:
         boto3.client('codepipeline').put_job_success_result(jobId=job_id)
+        LOGGER.info('===SUCCESS===')
     except botocore.exceptions.ClientError as err:
         LOGGER.error("Failed to PutJobSuccessResult for CodePipeline!\n%s", err)
 
@@ -45,6 +46,7 @@ def codepipeline_failure(job_id, message):
             jobId=job_id,
             failureDetails={'type': 'JobFailed', 'message': message}
         )
+        LOGGER.info('===FAILURE===')
     except botocore.exceptions.ClientError as err:
         LOGGER.error("Failed to PutJobFailureResult for CodePipeline!\n%s", err)
 
