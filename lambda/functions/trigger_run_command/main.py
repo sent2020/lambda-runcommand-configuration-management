@@ -34,7 +34,7 @@ def codepipeline_sucess(job_id):
     try:
         boto3.client('codepipeline').put_job_success_result(jobId=job_id)
     except botocore.exceptions.ClientError as err:
-        LOGGER.error('Failed to PutJobSuccessResult for CodePipeline!\n%s', err)
+        LOGGER.error("Failed to PutJobSuccessResult for CodePipeline!\n%s", err)
 
 def codepipeline_failure(job_id, message):
     """
@@ -46,7 +46,7 @@ def codepipeline_failure(job_id, message):
             failureDetails={'type': 'JobFailed', 'message': message}
         )
     except botocore.exceptions.ClientError as err:
-        LOGGER.error('Failed to PutJobFailureResult for CodePipeline!\n%s', err)
+        LOGGER.error("Failed to PutJobFailureResult for CodePipeline!\n%s", err)
 
 def find_instances():
     """
@@ -61,14 +61,14 @@ def find_instances():
         ec2 = boto3.client('ec2')
         instances = ec2.describe_instances(Filters=filters)
     except botocore.exceptions.ClientError as err:
-        LOGGER.error('Failed to DescribeInstances with EC2!\n%s', err)
+        LOGGER.error("Failed to DescribeInstances with EC2!\n%s", err)
 
     try:
         for instance in instances['Reservations']:
             instance_ids.append(instance['Instances'][0]['InstanceId'])
     except IndexError as err:
-        LOGGER.error('Unable to parse returned instances dict in ' \
-            '`find_instances` function!\n%s', err)
+        LOGGER.error("Unable to parse returned instances dict in " \
+            "`find_instances` function!\n%s", err)
 
     return instance_ids
 
@@ -87,7 +87,7 @@ def send_run_command(instance_ids):
                 'executionTimeout': ['120']
             }
         )
-        return 'sucess'
+        return 'success'
     except botocore.exceptions.ClientError as err:
         return err
 
@@ -99,7 +99,7 @@ def handle(event, context):
     try:
         job_id = event['CodePipeline.job']['id']
     except IndexError as err:
-        LOGGER.error('Could not retrieve CodePipeline Job ID!\n%s', err)
+        LOGGER.error("Could not retrieve CodePipeline Job ID!\n%s", err)
 
     instance_ids = find_instances()
 
@@ -111,4 +111,4 @@ def handle(event, context):
             codepipeline_failure(job_id, ("Run Command Failed!\n%s",
                                           run_command_status))
     else:
-        codepipeline_failure(job_id, "No Instance IDs Provided!")
+        codepipeline_failure(job_id, 'No Instance IDs Provided!')
