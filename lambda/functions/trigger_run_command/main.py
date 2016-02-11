@@ -101,7 +101,7 @@ def handle(event, context):
     except IndexError as err:
         LOGGER.error('Could not retrieve CodePipeline Job ID!\n%s', err)
 
-    instance_ids = find_instances
+    instance_ids = find_instances()
 
     if len(instance_ids) != 0:
         if send_run_command(instance_ids) == 'success':
