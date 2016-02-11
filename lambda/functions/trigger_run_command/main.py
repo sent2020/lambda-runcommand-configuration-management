@@ -3,10 +3,11 @@ Triggers Run Command on all instances with tag has_ssm_agent set to true,
 refreshes the git repository or clones it if it doesn't exist, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v1.2.1
+v1.3.0
 """
 from __future__ import print_function
 import logging
+import botocore
 import boto3
 
 LOGGER = logging.getLogger()
@@ -26,44 +27,57 @@ def log_event_and_context(event, context):
     LOGGER.info(event)
     LOGGER.info("====================================================")
 
-def codepipeline_sucess(codepipeline, job_id):
+def codepipeline_sucess(job_id):
     """
     Puts CodePipeline Success Result
     """
-    codepipeline.put_job_success_result(jobId=job_id)
+    try:
+        boto3.client('codepipeline').put_job_success_result(jobId=job_id)
+    except botocore.exceptions.ClientError as err:
+        LOGGER.error('Failed to PutJobSuccessResult for CodePipeline!\n%s', err)
 
-def codepipeline_failure(codepipeline, job_id, message):
+def codepipeline_failure(job_id, message):
     """
     Puts CodePipeline Failure Result
     """
-    codepipeline.put_job_failure_result(
-        jobId=job_id,
-        failureDetails={'type': 'JobFailed', 'message': message}
-    )
-
-def handle(event, context):
-    """
-    Lambda main handler
-    """
-    # TODO
-    # Better error handling, this is awful!
     try:
-        log_event_and_context(event, context)
-        ssm = boto3.client('ssm')
+        boto3.client('codepipeline').put_job_failure_result(
+            jobId=job_id,
+            failureDetails={'type': 'JobFailed', 'message': message}
+        )
+    except botocore.exceptions.ClientError as err:
+        LOGGER.error('Failed to PutJobFailureResult for CodePipeline!\n%s', err)
+
+def find_instances():
+    """
+    Find Instances to invoke Run Command against
+    """
+    instance_ids = []
+    filters = [{
+        'Name': 'tag:has_ssm_agent',
+        'Values': ['true', 'True']
+    }]
+    try:
         ec2 = boto3.client('ec2')
-        codepipeline = boto3.client('codepipeline')
-
-        filters = [{
-            'Name': 'tag:has_ssm_agent',
-            'Values': ['true', 'True']
-        }]
         instances = ec2.describe_instances(Filters=filters)
-        job_id = event['CodePipeline.job']['id']
-        instance_ids = []
+    except botocore.exceptions.ClientError as err:
+        LOGGER.error('Failed to DescribeInstances with EC2!\n%s', err)
 
+    try:
         for instance in instances['Reservations']:
             instance_ids.append(instance['Instances'][0]['InstanceId'])
+    except IndexError as err:
+        LOGGER.error('Unable to parse returned instances dict in ' \
+            '`find_instances` function!\n%s', err)
 
+    return instance_ids
+
+def send_run_command(instance_ids):
+    """
+    Sends the Run Command API Call
+    """
+    try:
+        ssm = boto3.client('ssm')
         ssm.send_command(
             InstanceIds=instance_ids,
             DocumentName='AWS-RunShellScript',
@@ -73,7 +87,26 @@ def handle(event, context):
                 'executionTimeout': ['120']
             }
         )
+        return 'sucess'
+    except botocore.exceptions.ClientError as err:
+        return err
 
-        codepipeline_sucess(codepipeline, job_id)
-    except Exception as err:
-        codepipeline_failure(codepipeline, job_id, err)
+def handle(event, context):
+    """
+    Lambda main handler
+    """
+    log_event_and_context(event, context)
+    try:
+        job_id = event['CodePipeline.job']['id']
+    except IndexError as err:
+        LOGGER.error('Could not retrieve CodePipeline Job ID!\n%s', err)
+
+    instance_ids = find_instances
+
+    if len(instance_ids) != 0:
+        if send_run_command(instance_ids) == 'success':
+            codepipeline_sucess(job_id)
+        else:
+            codepipeline_failure(job_id, ("Run Command Failed!\n%s", err))
+    else:
+        codepipeline_failure(job_id, "No Instance IDs Provided!")
