@@ -104,9 +104,11 @@ def handle(event, context):
     instance_ids = find_instances()
 
     if len(instance_ids) != 0:
-        if send_run_command(instance_ids) == 'success':
+        run_command_status = send_run_command(instance_ids)
+        if run_command_status == 'success':
             codepipeline_sucess(job_id)
         else:
-            codepipeline_failure(job_id, ("Run Command Failed!\n%s", err))
+            codepipeline_failure(job_id, ("Run Command Failed!\n%s",
+                                          run_command_status))
     else:
         codepipeline_failure(job_id, "No Instance IDs Provided!")
