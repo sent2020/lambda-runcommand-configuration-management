@@ -16,7 +16,9 @@ LOGGER.setLevel(logging.INFO)
 COMMANDS = [
     'if cd /tmp/garlc; then git pull; else git clone ' \
     'https://github.com/irlrobot/garlc.git /tmp/garlc; fi',
-    'ansible-playbook -i "localhost," -c local /tmp/garlc/ansible/playbook.yml'
+    'ansible-playbook -i "localhost," -c local ' \
+    '--extra-vars="hosts=web_server"' \
+    '/tmp/garlc/ansible/playbook.yml'
 ]
 
 def log_event_and_context(event, context):
