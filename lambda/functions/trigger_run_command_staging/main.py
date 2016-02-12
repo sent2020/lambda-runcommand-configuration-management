@@ -102,6 +102,9 @@ def handle(event, context):
     try:
         job_id = event['CodePipeline.job']['id']
     except KeyError as err:
+        # TODO
+        # Better handle manual lambda invocations
+        # This will cause a ParamValidationError
         job_id = 1
         LOGGER.error("Could not retrieve CodePipeline Job ID!\n%s", err)
 
