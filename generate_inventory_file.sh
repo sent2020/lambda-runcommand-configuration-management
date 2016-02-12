@@ -4,9 +4,9 @@
 # v1.0.0
 
 # Query metadata for our instance id and fetch values of the Roles tag
-tags=`ec2-describe-tags --filter "resource-type=instance" \
-  --filter "resource-id=$(ec2-metadata -i | cut -d ' ' -f2)" \
-  --filter "key=Roles" | cut -f5`
+tags="$(ec2-describe-tags --filter \"resource-type=instance\" \
+  --filter \"resource-id=$(ec2-metadata -i | cut -d ' ' -f2)\" \
+  --filter \"key=Roles\" | cut -f5)"
 # Whitespace get outta here we don't need you
 tags_no_whitespace="$(echo -e "${tags}" | tr -d '[[:space:]]')"
 
