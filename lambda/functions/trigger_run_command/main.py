@@ -3,7 +3,7 @@ Triggers Run Command on all instances with tag has_ssm_agent set to true,
 refreshes the git repository or clones it if it doesn't exist, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v1.3.0
+v2.0.0
 """
 from __future__ import print_function
 import logging
@@ -16,6 +16,7 @@ LOGGER.setLevel(logging.INFO)
 COMMANDS = [
     'if cd /tmp/garlc; then git pull; else git clone ' \
     'https://github.com/irlrobot/garlc.git /tmp/garlc; fi',
+    'bash /tmp/garlc/generate_inventory_file.sh',
     'ansible-playbook -i "/tmp/inventory" /tmp/garlc/ansible/playbook.yml'
 ]
 
