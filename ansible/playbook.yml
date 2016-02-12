@@ -1,17 +1,17 @@
 ---
-- hosts: all
+- hosts: web_server
   tasks:
   - name: Install required packages
     yum: name={{ item }} state=installed
     with_items:
-      - httpd
+      - nginx
   - name: Remove packages
     yum: name={{ item }} state=absent
     with_items:
-      - nginx
+      - httpd
   - name: Add index.html
     copy: src=index.html dest=/var/www/html mode=0644
   - name:  Start services
     service: name={{ item }} state=started enabled=yes
     with_items:
-      - httpd
+      - nginx
