@@ -14,8 +14,8 @@ LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 
 COMMANDS = [
-    'if cd /tmp/garlc; then git pull; else git clone ' \
-    'https://github.com/irlrobot/garlc.git /tmp/garlc; fi',
+    'if cd /tmp/garlc; then git fetch && git checkout master && git pull ; ',
+    'else git clone -b staging https://github.com/irlrobot/garlc.git /tmp/garlc; fi',
     'bash /tmp/garlc/generate_inventory_file.sh',
     'ansible-playbook -i "/tmp/inventory" /tmp/garlc/ansible/playbook.yml'
 ]
