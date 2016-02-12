@@ -69,7 +69,7 @@ def find_instances():
     try:
         for instance in instances['Reservations']:
             instance_ids.append(instance['Instances'][0]['InstanceId'])
-    except IndexError as err:
+    except KeyError as err:
         LOGGER.error("Unable to parse returned instances dict in " \
             "`find_instances` function!\n%s", err)
 
@@ -101,7 +101,7 @@ def handle(event, context):
     log_event_and_context(event, context)
     try:
         job_id = event['CodePipeline.job']['id']
-    except IndexError as err:
+    except KeyError as err:
         LOGGER.error("Could not retrieve CodePipeline Job ID!\n%s", err)
 
     instance_ids = find_instances()
