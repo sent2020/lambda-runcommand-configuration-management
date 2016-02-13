@@ -1,11 +1,13 @@
 ---
 # Configure Web Server
 
-- name: Install required packages
+- name: Install required packages (RedHat)
+  when: ansible_os_family == "RedHat"
   yum: name={{ item }} state=installed
   with_items:
     - httpd
-- name: Remove packages
+- name: Remove packages (RedHat)
+  when: ansible_os_family == "RedHat"
   yum: name={{ item }} state=absent
   with_items:
     - nginx
