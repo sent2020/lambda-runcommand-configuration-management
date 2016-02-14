@@ -8,6 +8,13 @@ CodePipeline
 # What witchcraft is this?
 This is SSH-less, continuous configuration management (boom new buzzword).  This is the future.
 
+1. Create/Update an Ansible playbook
+* git push
+* CodePipeline picks up your changes and invokes a Lambda function
+* The Lambda function tells Run Command to trigger your instances to self update
+* ???
+* Profit
+
 # Crude Setup Instructions for a Demo
 1. Fork this repo
 * Install [Apex](https://github.com/apex/apex)

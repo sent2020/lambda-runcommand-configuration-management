@@ -1,0 +1,12 @@
+---
+# Common among all roles
+
+- name: Install required packages (RedHat)
+  when: ansible_os_family == "RedHat"
+  yum: name={{ item }} state=installed
+  with_items:
+    - curl
+    - htop
+
+- name: Install sysdig
+  shell: curl -s https://s3.amazonaws.com/download.draios.com/stable/install-sysdig | sudo bash

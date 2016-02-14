@@ -1,4 +1,11 @@
 ---
+# Main playbook
+
+- hosts: all
+  gather_facts: yes
+  roles:
+    - common
+
 - hosts: webserver
   roles:
     - webserver
