@@ -106,7 +106,7 @@ def send_run_command(instance_ids, commands):
         ssm.send_command(
             InstanceIds=instance_ids,
             DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=60,
+            TimeoutSeconds=300,
             Parameters={
                 'commands': commands,
                 'executionTimeout': ['120']
