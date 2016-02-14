@@ -44,10 +44,10 @@ def ssm_commands(artifact):
     timestamp = strftime("%Y%m%d%H%M%S")
     return [
         'aws configure set s3.signature_version s3v4',
-        ("aws s3 cp %s /tmp/%s.zip --quiet", artifact, timestamp),
-        ("unzip -qq /tmp/%s.zip /tmp/%s", timestamp),
-        ("bash /tmp/%s/generate_inventory_file.sh", timestamp),
-        ("ansible-playbook -i '/tmp/inventory' /tmp/%s/ansible/playbook.yml", timestamp)
+        'aws s3 cp {0} /tmp/{1}.zip --quiet'.format(artifact, timestamp),
+        'unzip -qq /tmp/{0}.zip /tmp/{1}'.format(timestamp, timestamp),
+        'bash /tmp/{0}/generate_inventory_file.sh'.format(timestamp),
+        'ansible-playbook -i "/tmp/inventory" /tmp/{0}/ansible/playbook.yml'.format(timestamp)
     ]
 
 def codepipeline_sucess(job_id):
