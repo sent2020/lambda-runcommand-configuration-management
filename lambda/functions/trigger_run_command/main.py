@@ -3,22 +3,16 @@ Triggers Run Command on all instances with tag has_ssm_agent set to true,
 refreshes the git repository or clones it if it doesn't exist, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v2.0.0
+v3.0.0
 """
 from __future__ import print_function
+from time import strftime
 import logging
 import botocore
 import boto3
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
-
-COMMANDS = [
-    'if cd /tmp/garlc; then git fetch && git checkout master && git pull ; ',
-    'else git clone -b staging https://github.com/irlrobot/garlc.git /tmp/garlc; fi',
-    'bash /tmp/garlc/generate_inventory_file.sh',
-    'ansible-playbook -i "/tmp/inventory" /tmp/garlc/ansible/playbook.yml'
-]
 
 def log_event_and_context(event, context):
     """Logs event information for debugging"""
@@ -27,6 +21,34 @@ def log_event_and_context(event, context):
     LOGGER.info("====================================================")
     LOGGER.info(event)
     LOGGER.info("====================================================")
+
+def find_artifact(event):
+    """
+    Returns the S3 Object that holds the artifact
+    """
+    try:
+        object_key = event['CodePipeline.job']['data']['inputArtifacts'][0] \
+            ['location']['s3Location']['objectKey']
+        bucket = event['CodePipeline.job']['data']['inputArtifacts'][0] \
+            ['location']['s3Location']['bucketName']
+        return 's3://{0}/{1}'.format(bucket, object_key)
+    except KeyError as err:
+        raise KeyError("Couldn't get S3 object!\n%s", err)
+
+def ssm_commands(artifact):
+    """
+    Builds commands to be sent to SSM (Run Command)
+    """
+    # TODO
+    # Error handling in the command generation
+    timestamp = strftime("%Y%m%d%H%M%S")
+    return [
+        'aws configure set s3.signature_version s3v4',
+        'aws s3 cp {0} /tmp/{1}.zip --quiet'.format(artifact, timestamp),
+        'unzip -qq /tmp/{0}.zip -d /tmp/{1}'.format(timestamp, timestamp),
+        'bash /tmp/{0}/generate_inventory_file.sh'.format(timestamp),
+        'ansible-playbook -i "/tmp/inventory" /tmp/{0}/ansible/playbook.yml'.format(timestamp)
+    ]
 
 def codepipeline_sucess(job_id):
     """
@@ -75,7 +97,7 @@ def find_instances():
 
     return instance_ids
 
-def send_run_command(instance_ids):
+def send_run_command(instance_ids, commands):
     """
     Sends the Run Command API Call
     """
@@ -84,9 +106,9 @@ def send_run_command(instance_ids):
         ssm.send_command(
             InstanceIds=instance_ids,
             DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=60,
+            TimeoutSeconds=300,
             Parameters={
-                'commands': COMMANDS,
+                'commands': commands,
                 'executionTimeout': ['120']
             }
         )
@@ -109,9 +131,10 @@ def handle(event, context):
         LOGGER.error("Could not retrieve CodePipeline Job ID!\n%s", err)
 
     instance_ids = find_instances()
+    commands = ssm_commands(find_artifact(event))
 
     if len(instance_ids) != 0:
-        run_command_status = send_run_command(instance_ids)
+        run_command_status = send_run_command(instance_ids, commands)
         if run_command_status == 'success':
             codepipeline_sucess(job_id)
         else:
