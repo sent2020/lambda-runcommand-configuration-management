@@ -27,10 +27,10 @@ def find_artifact(event):
     Returns the S3 Object that holds the artifact
     """
     try:
-        object_key = event['CodePipeline.job']['inputArtifacts'][0]['location'] \
-            ['s3Location']['objectKey']
-        bucket = event['CodePipeline.job']['inputArtifacts'][0]['location'] \
-            ['s3Location']['bucketName']
+        object_key = event['CodePipeline.job']['data']['inputArtifacts'][0] \
+            ['location']['s3Location']['objectKey']
+        bucket = event['CodePipeline.job']['data']['inputArtifacts'][0] \
+            ['location']['s3Location']['bucketName']
         return("s3://%s/%s", bucket, object_key)
     except KeyError as err:
         raise KeyError("Couldn't get S3 object!\n%s", err)
