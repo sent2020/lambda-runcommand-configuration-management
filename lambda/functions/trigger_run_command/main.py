@@ -31,7 +31,7 @@ def find_artifact(event):
             ['s3Location']['objectKey']
         bucket = event['CodePipeline.job']['inputArtifacts'][0]['location'] \
             ['s3Location']['bucketName']
-        return {'bucket': bucket, 'key': object_key}
+        return("s3://%s/%s", bucket, object_key)
     except KeyError as err:
         raise KeyError("Couldn't get S3 object!\n%s", err)
 
@@ -39,14 +39,15 @@ def ssm_commands(artifact):
     """
     Builds commands to be sent to SSM (Run Command)
     """
+    # TODO
+    # Error handling in the command generation
     timestamp = strftime("%Y%m%d%H%M%S")
     return [
-        'cd /tmp',
-        ("aws s3api get-object --bucket %s --key %s /tmp/%s",
-         artifact['bucket'], artifact['key'], timestamp),
-        'ADD UNZIP COMMANDS',
-        'bash /tmp/garlc/generate_inventory_file.sh',
-        'ansible-playbook -i "/tmp/inventory" /tmp/garlc/ansible/playbook.yml'
+        'aws configure set s3.signature_version s3v4',
+        ("aws s3 cp %s /tmp/%s.zip --quiet", artifact, timestamp),
+        ("unzip -qq /tmp/%s.zip /tmp/%s", timestamp),
+        ("bash /tmp/%s/generate_inventory_file.sh", timestamp),
+        ("ansible-playbook -i '/tmp/inventory' /tmp/%s/ansible/playbook.yml", timestamp)
     ]
 
 def codepipeline_sucess(job_id):
