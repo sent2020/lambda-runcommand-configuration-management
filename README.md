@@ -32,7 +32,9 @@ This is SSH-less, continuous configuration management (boom new buzzword).  This
 * From the repo parent directory run `apex deploy -C lambda/`
 * Create a CodePipeline with two stages:
   * Source stage should fetch from your fork of this repo on the master branch
+    * Output should be MyApp
   * Second stage should be an Invoke on the "garlic_trigger_run_command" Lambda function
+    * Input should be MyApp
   * NOTE:  If using the AWS Console to create your Pipeline you will be forced to add a "Beta" stage which you can later delete and replace with the Invoke stage.  Just add whatever to get through the wizard.
 * Update something in the repository (e.g. add something to the Ansible playbook) and then commit to the master branch and watch your changes flow and your instances update automagically :fire:
 
