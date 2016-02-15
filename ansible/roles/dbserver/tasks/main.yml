@@ -7,6 +7,7 @@
   with_items:
     - mysql-server
 - name:  Start services
+  when: ansible_os_family == "RedHat"
   service: name={{ item }} state=started enabled=yes
   with_items:
     - mysqld
