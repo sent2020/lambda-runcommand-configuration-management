@@ -1,9 +1,9 @@
 """
-Triggers Run Command on all instances with tag has_ssm_agent set to true,
-refreshes the git repository or clones it if it doesn't exist, and finally
+Triggers Run Command on all instances with tag has_ssm_agent set to true.
+Fetches artifact from S3 via CodePipeline, extracts the contents, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v3.0.0
+v3.0.1
 """
 from __future__ import print_function
 from time import strftime
