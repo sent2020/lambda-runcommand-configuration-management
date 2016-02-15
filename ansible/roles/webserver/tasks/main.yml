@@ -12,8 +12,7 @@
   with_items:
     - nginx
 - name:  Start services
+  when: ansible_os_family == "RedHat"
   service: name={{ item }} state=started enabled=yes
   with_items:
     - httpd
-  register: command_result
-  failed_when: "'FAILED' in command_result.stderr"
