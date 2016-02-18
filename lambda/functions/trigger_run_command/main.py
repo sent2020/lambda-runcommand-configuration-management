@@ -7,7 +7,6 @@ v3.0.1
 """
 from __future__ import print_function
 import datetime
-from time import strftime
 import logging
 import botocore
 import boto3
