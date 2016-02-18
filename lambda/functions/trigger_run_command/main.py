@@ -6,6 +6,7 @@ joshcb@amazon.com
 v3.0.1
 """
 from __future__ import print_function
+import datetime
 from time import strftime
 import logging
 import botocore
@@ -41,7 +42,8 @@ def ssm_commands(artifact):
     """
     # TODO
     # Error handling in the command generation
-    timestamp = strftime("%Y%m%d%H%M%S")
+    utc_datetime = datetime.datetime.utcnow()
+    timestamp = utc_datetime.strftime("%Y%m%d%H%M%S")
     return [
         'aws configure set s3.signature_version s3v4',
         'aws s3 cp {0} /tmp/{1}.zip --quiet'.format(artifact, timestamp),
