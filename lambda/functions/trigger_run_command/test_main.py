@@ -63,13 +63,14 @@ def test_ssm_commands():
     ]
     assert ssm_commands(artifact) == commands
 
-def test_codepipeline_success(monkeypatch):
+@patch('boto3.client')
+def test_codepipeline_success(mock_client):
     """
     Test the codepipeline_success function with valid data
     """
-    boto3 = MagicMock()
-    monkeypatch.setattr('boto3.client', MagicMock(return_value=boto3))
-    monkeypatch.setattr('boto3.client.put_job_success_result', MagicMock(return_value=True))
+    codepipeline = MagicMock()
+    mock_client.return_value = codepipeline
+    codepipeline.put_job_success_result.return_value = True
     assert codepipeline_success(1) == True
 
 @patch('boto3.client')
@@ -88,13 +89,14 @@ def test_codepipeline_success_invalid(mock_client):
     codepipeline.put_job_success_result.side_effect = ClientError(err_msg, 'Test')
     assert codepipeline_success(1) == False
 
-def test_codepipeline_failure(monkeypatch):
+@patch('boto3.client')
+def test_codepipeline_failure(mock_client):
     """
     Test the codepipeline_failure function with valid data
     """
-    boto3 = MagicMock()
-    monkeypatch.setattr('boto3.client', MagicMock(return_value=boto3))
-    monkeypatch.setattr('boto3.client.put_job_failure_result', MagicMock(return_value=True))
+    codepipeline = MagicMock()
+    mock_client.return_value = codepipeline
+    codepipeline.put_job_failure_result.return_value = True
     assert codepipeline_failure(1, 'blah') == True
 
 @patch('boto3.client')
