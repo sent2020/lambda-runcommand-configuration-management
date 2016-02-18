@@ -51,15 +51,17 @@ def ssm_commands(artifact):
         'ansible-playbook -i "/tmp/inventory" /tmp/{0}/ansible/playbook.yml'.format(timestamp)
     ]
 
-def codepipeline_sucess(job_id):
+def codepipeline_success(job_id):
     """
     Puts CodePipeline Success Result
     """
     try:
         boto3.client('codepipeline').put_job_success_result(jobId=job_id)
         LOGGER.info('===SUCCESS===')
+        return True
     except botocore.exceptions.ClientError as err:
         LOGGER.error("Failed to PutJobSuccessResult for CodePipeline!\n%s", err)
+        return False
 
 def codepipeline_failure(job_id, message):
     """
@@ -71,8 +73,10 @@ def codepipeline_failure(job_id, message):
             failureDetails={'type': 'JobFailed', 'message': message}
         )
         LOGGER.info('===FAILURE===')
+        return True
     except botocore.exceptions.ClientError as err:
         LOGGER.error("Failed to PutJobFailureResult for CodePipeline!\n%s", err)
+        return False
 
 def find_instances():
     """
@@ -137,7 +141,7 @@ def handle(event, context):
     if len(instance_ids) != 0:
         run_command_status = send_run_command(instance_ids, commands)
         if run_command_status == 'success':
-            codepipeline_sucess(job_id)
+            codepipeline_success(job_id)
         else:
             codepipeline_failure(job_id, ("Run Command Failed!\n%s",
                                           run_command_status))
