@@ -56,7 +56,8 @@ def codepipeline_success(job_id):
     Puts CodePipeline Success Result
     """
     try:
-        boto3.client('codepipeline').put_job_success_result(jobId=job_id)
+        codepipeline = boto3.client('codepipeline')
+        codepipeline.put_job_success_result(jobId=job_id)
         LOGGER.info('===SUCCESS===')
         return True
     except ClientError as err:
@@ -68,7 +69,8 @@ def codepipeline_failure(job_id, message):
     Puts CodePipeline Failure Result
     """
     try:
-        boto3.client('codepipeline').put_job_failure_result(
+        codepipeline = boto3.client('codepipeline')
+        codepipeline.put_job_failure_result(
             jobId=job_id,
             failureDetails={'type': 'JobFailed', 'message': message}
         )
