@@ -1,11 +1,47 @@
 """
 Unit Tests for trigger_run_command Lambda function
 """
+import pytest
+from main import log_event_and_context
+from main import find_artifact
 from main import ssm_commands
 from freezegun import freeze_time
 
-@freeze_time('2016-01-01')
+def test_log_event_and_context():
+    """
+    Test the log_event_and_context function
+    """
+    assert log_event_and_context
 
+def test_find_artifact():
+    """
+    Test the log_event_and_context function with valid event
+    """
+    event = {
+        'CodePipeline.job': {
+            'data': {
+                'inputArtifacts': [{
+                    'location': {
+                        's3Location': {
+                            'objectKey': 'test/key',
+                            'bucketName': 'bucket'
+                        }
+                    }
+                }]
+            }
+        }
+    }
+    assert find_artifact(event) == 's3://bucket/test/key'
+
+def test_find_artifact_invalid():
+    """
+    Test the log_event_and_context function with invalid event
+    """
+    event = {}
+    with pytest.raises(KeyError):
+        assert find_artifact(event) == 'blah'
+
+@freeze_time('2016-01-01')
 def test_ssm_commands():
     """
     Test the ssm_commands function
