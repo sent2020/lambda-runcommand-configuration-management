@@ -8,7 +8,7 @@ v3.0.1
 from __future__ import print_function
 import datetime
 import logging
-import botocore
+from botocore.exceptions import ClientError
 import boto3
 
 LOGGER = logging.getLogger()
@@ -59,7 +59,7 @@ def codepipeline_success(job_id):
         boto3.client('codepipeline').put_job_success_result(jobId=job_id)
         LOGGER.info('===SUCCESS===')
         return True
-    except botocore.exceptions.ClientError as err:
+    except ClientError as err:
         LOGGER.error("Failed to PutJobSuccessResult for CodePipeline!\n%s", err)
         return False
 
@@ -74,7 +74,7 @@ def codepipeline_failure(job_id, message):
         )
         LOGGER.info('===FAILURE===')
         return True
-    except botocore.exceptions.ClientError as err:
+    except ClientError as err:
         LOGGER.error("Failed to PutJobFailureResult for CodePipeline!\n%s", err)
         return False
 
@@ -90,7 +90,7 @@ def find_instances():
     try:
         ec2 = boto3.client('ec2')
         instances = ec2.describe_instances(Filters=filters)
-    except botocore.exceptions.ClientError as err:
+    except ClientError as err:
         LOGGER.error("Failed to DescribeInstances with EC2!\n%s", err)
 
     try:
@@ -118,7 +118,7 @@ def send_run_command(instance_ids, commands):
             }
         )
         return 'success'
-    except botocore.exceptions.ClientError as err:
+    except ClientError as err:
         return err
 
 def handle(event, context):
