@@ -11,7 +11,6 @@ from main import codepipeline_success
 from main import codepipeline_failure
 from main import find_instances
 from main import send_run_command
-from main import handle
 from freezegun import freeze_time
 
 def test_log_event_and_context():
@@ -131,3 +130,29 @@ def test_find_instances(mock_client):
     mock_client.return_value = ec2
     ec2.describe_instances.return_value = instances
     assert find_instances() == ['abcdef-12345']
+
+@patch('boto3.client')
+def test_send_run_command(mock_client):
+    """
+    Test the send_run_command function without errors
+    """
+    ssm = MagicMock()
+    mock_client.return_value = ssm
+    ssm.send_command.return_value = True
+    assert send_run_command(['abcdef-12345'], ['blah']) == 'success'
+
+@patch('boto3.client')
+def test_send_run_command_invalid(mock_client):
+    """
+    Test the send_run_command function when a boto exception occurs
+    """
+    ssm = MagicMock()
+    mock_client.return_value = ssm
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Boom!'
+        }
+    }
+    ssm.send_command.side_effect = ClientError(err_msg, 'Test')
+    assert send_run_command(['abcdef-12345'], ['blah']) != 'success'
