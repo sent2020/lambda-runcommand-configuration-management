@@ -2,8 +2,8 @@
 Unit Tests for trigger_run_command Lambda function
 """
 import pytest
-import botocore
-from mock import MagicMock, Mock
+from botocore.exceptions import ClientError
+from mock import MagicMock, patch
 from main import log_event_and_context
 from main import find_artifact
 from main import ssm_commands
@@ -72,15 +72,21 @@ def test_codepipeline_success(monkeypatch):
     monkeypatch.setattr('boto3.client.put_job_success_result', MagicMock(return_value=True))
     assert codepipeline_success(1) == True
 
-def test_codepipeline_success_invalid(monkeypatch):
+@patch('boto3.client')
+def test_codepipeline_success_invalid(mock_client):
     """
-    Test the codepipeline_success function with invalid data
+    Test the codepipeline_success function when a boto exception occurs
     """
-    boto3 = MagicMock()
-    monkeypatch.setattr('boto3.client', MagicMock(return_value=boto3))
-    monkeypatch.setattr('boto3.client.put_job_success_result', Mock(side_effect=botocore.exceptions.ClientError))
-    with pytest.raises(botocore.exceptions.ClientError):
-        assert codepipeline_success(1)
+    codepipeline = MagicMock()
+    mock_client.return_value = codepipeline
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Boom!'
+        }
+    }
+    codepipeline.put_job_success_result.side_effect = ClientError(err_msg, 'Test')
+    assert codepipeline_success(1) == False
 
 def test_codepipeline_failure(monkeypatch):
     """
@@ -91,21 +97,28 @@ def test_codepipeline_failure(monkeypatch):
     monkeypatch.setattr('boto3.client.put_job_failure_result', MagicMock(return_value=True))
     assert codepipeline_failure(1, 'blah') == True
 
-def test_codepipeline_failure_invalid(monkeypatch):
+@patch('boto3.client')
+def test_codepipeline_failure_invalid(mock_client):
     """
-    Test the codepipeline_failure function with invalid data
+    Test the codepipeline_failure function when a boto exception occurs
     """
-    boto3 = MagicMock()
-    monkeypatch.setattr('boto3.client', MagicMock(return_value=boto3))
-    monkeypatch.setattr('boto3.client.put_job_success_result', Mock(side_effect=botocore.exceptions.ClientError))
-    with pytest.raises(botocore.exceptions.ClientError):
-        assert codepipeline_failure(1, 'blah')
+    codepipeline = MagicMock()
+    mock_client.return_value = codepipeline
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Boom!'
+        }
+    }
+    codepipeline.put_job_failure_result.side_effect = ClientError(err_msg, 'Test')
+    assert codepipeline_failure(1, 'blah') == False
 
-def test_find_instances(monkeypatch):
+@patch('boto3.client')
+def test_find_instances(mock_client):
     """
     Test the find_instances function without errors
     """
-    boto3 = MagicMock()
+    ec2 = MagicMock()
     instances = {
         'Reservations': [{
             'Instances': [{
@@ -113,6 +126,6 @@ def test_find_instances(monkeypatch):
             }]
         }]
     }
-    monkeypatch.setattr('boto3.client', MagicMock(return_value=boto3))
-    monkeypatch.setattr('boto3.client.describe_instances', MagicMock(return_value=instances))
-    assert find_instances() == 'abcdef-12345'
+    mock_client.return_value = ec2
+    ec2.describe_instances.return_value = instances
+    assert find_instances() == ['abcdef-12345']
