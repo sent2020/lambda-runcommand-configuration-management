@@ -11,6 +11,7 @@ from main import codepipeline_success
 from main import codepipeline_failure
 from main import find_instances
 from main import send_run_command
+from main import handle
 from freezegun import freeze_time
 
 def test_log_event_and_context():
@@ -132,6 +133,22 @@ def test_find_instances(mock_client):
     assert find_instances() == ['abcdef-12345']
 
 @patch('boto3.client')
+def test_find_instances_boto_error(mock_client):
+    """
+    Test the find_instances function when a boto exception occurs
+    """
+    ec2 = MagicMock()
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Boom!'
+        }
+    }
+    mock_client.return_value = ec2
+    mock_client.describe_instances = ClientError(err_msg, 'Test')
+    assert find_instances() == []
+
+@patch('boto3.client')
 def test_send_run_command(mock_client):
     """
     Test the send_run_command function without errors
@@ -156,3 +173,73 @@ def test_send_run_command_invalid(mock_client):
     }
     ssm.send_command.side_effect = ClientError(err_msg, 'Test')
     assert send_run_command(['abcdef-12345'], ['blah']) != 'success'
+
+@patch('main.codepipeline_success')
+@patch('main.send_run_command')
+@patch('main.find_artifact')
+@patch('main.ssm_commands')
+@patch('main.find_instances')
+@patch('main.log_event_and_context')
+def test_handle(mock_log, mock_instances, mock_commands,
+                mock_artifact, mock_run_command, mock_success):
+    """
+    Test the handle function with valid input and instances
+    """
+    mock_log.return_value = True
+    mock_instances.return_value = ['abcdef-12345']
+    mock_commands.return_value = True
+    mock_artifact.return_value = True
+    mock_run_command.return_value = 'success'
+    mock_success.return_value = True
+    event = {
+        'CodePipeline.job': {
+            'id': 'abc123'
+        }
+    }
+    assert handle(event, 'Test') == True
+
+@patch('main.codepipeline_failure')
+@patch('main.find_artifact')
+@patch('main.ssm_commands')
+@patch('main.find_instances')
+@patch('main.log_event_and_context')
+def test_handle_no_instances(mock_log, mock_instances, mock_commands,
+                             mock_artifact, mock_failure):
+    """
+    Test the handle function with valid input and no instances
+    """
+    mock_log.return_value = True
+    mock_instances.return_value = []
+    mock_commands.return_value = True
+    mock_artifact.return_value = True
+    mock_failure.return_value = True
+    event = {
+        'CodePipeline.job': {
+            'id': 'abc123'
+        }
+    }
+    assert handle(event, 'Test') == False
+
+@patch('main.codepipeline_failure')
+@patch('main.send_run_command')
+@patch('main.find_artifact')
+@patch('main.ssm_commands')
+@patch('main.find_instances')
+@patch('main.log_event_and_context')
+def test_handle_run_command_fails(mock_log, mock_instances, mock_commands,
+                                  mock_artifact, mock_run_command, mock_failure):
+    """
+    Test the handle function with valid input and no instances
+    """
+    mock_log.return_value = True
+    mock_instances.return_value = ['abcdef-12345']
+    mock_commands.return_value = True
+    mock_artifact.return_value = True
+    mock_run_command.return_value = False
+    mock_failure.return_value = True
+    event = {
+        'CodePipeline.job': {
+            'id': 'abc123'
+        }
+    }
+    assert handle(event, 'Test') == False
