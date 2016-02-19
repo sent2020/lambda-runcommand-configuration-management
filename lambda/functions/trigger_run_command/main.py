@@ -139,13 +139,15 @@ def handle(event, context):
 
     instance_ids = find_instances()
     commands = ssm_commands(find_artifact(event))
-
     if len(instance_ids) != 0:
         run_command_status = send_run_command(instance_ids, commands)
         if run_command_status == 'success':
             codepipeline_success(job_id)
+            return True
         else:
-            codepipeline_failure(job_id, ("Run Command Failed!\n%s",
-                                          run_command_status))
+            err = "Run Command Failed!\n%s", str(run_command_status)
+            codepipeline_failure(job_id, err)
+            return False
     else:
         codepipeline_failure(job_id, 'No Instance IDs Provided!')
+        return False
