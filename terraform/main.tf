@@ -6,9 +6,13 @@ module "instance_profile" {
   source = "./iam"
 }
 
+module "lambda" {
+  source = "./lambda"
+}
+
 module "launch_configuration" {
   source = "./lc"
-  iam_instance_profile = "${module.instance_profile.role_arn}"
+  iam_instance_profile = "${module.instance_profile.profile_name}"
   region = "${var.region}"
   key_name = "joshcb"
 }
