@@ -15,6 +15,11 @@ resource "aws_autoscaling_group" "asg" {
     value = "${var.roles}"
     propagate_at_launch = true
   }
+  tag {
+    key = "has_ssm_agent"
+    value = "true"
+    propagate_at_launch = true
+  }
 }
 
 output "asgid" {
