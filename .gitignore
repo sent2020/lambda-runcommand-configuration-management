@@ -1,0 +1,8 @@
+# pytest
+**.pyc
+**__pycache__
+**.cache
+.coverage
+terraform.tfstate
+terraform.tfstate.backup
+.terraform

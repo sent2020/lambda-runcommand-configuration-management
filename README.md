@@ -1,11 +1,11 @@
-# GARLC
+# The GARLC Framework
 Git  
 Ansible  
 Run Command  
 Lambda  
 CodePipeline  
 
-# What witchcraft is this?
+## What witchcraft is this?
 This is SSH-less, continuous configuration management (boom new buzzword).  This is the future.
 
 1. Create/Update an Ansible playbook

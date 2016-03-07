@@ -1,0 +1,6 @@
+[webserver]
+localhost ansible_connection=local
+[appserver]
+localhost ansible_connection=local
+[dbserver]
+localhost ansible_connection=local

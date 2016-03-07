@@ -1,14 +1,14 @@
 """
-Triggers Run Command on all instances with tag has_ssm_agent set to true,
-refreshes the git repository or clones it if it doesn't exist, and finally
+Triggers Run Command on all instances with tag has_ssm_agent set to true.
+Fetches artifact from S3 via CodePipeline, extracts the contents, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v3.0.0
+v3.0.1
 """
 from __future__ import print_function
-from time import strftime
+import datetime
 import logging
-import botocore
+from botocore.exceptions import ClientError
 import boto3
 
 LOGGER = logging.getLogger()
@@ -41,7 +41,8 @@ def ssm_commands(artifact):
     """
     # TODO
     # Error handling in the command generation
-    timestamp = strftime("%Y%m%d%H%M%S")
+    utc_datetime = datetime.datetime.utcnow()
+    timestamp = utc_datetime.strftime("%Y%m%d%H%M%S")
     return [
         'aws configure set s3.signature_version s3v4',
         'aws s3 cp {0} /tmp/{1}.zip --quiet'.format(artifact, timestamp),
@@ -50,28 +51,34 @@ def ssm_commands(artifact):
         'ansible-playbook -i "/tmp/inventory" /tmp/{0}/ansible/playbook.yml'.format(timestamp)
     ]
 
-def codepipeline_sucess(job_id):
+def codepipeline_success(job_id):
     """
     Puts CodePipeline Success Result
     """
     try:
-        boto3.client('codepipeline').put_job_success_result(jobId=job_id)
+        codepipeline = boto3.client('codepipeline')
+        codepipeline.put_job_success_result(jobId=job_id)
         LOGGER.info('===SUCCESS===')
-    except botocore.exceptions.ClientError as err:
+        return True
+    except ClientError as err:
         LOGGER.error("Failed to PutJobSuccessResult for CodePipeline!\n%s", err)
+        return False
 
 def codepipeline_failure(job_id, message):
     """
     Puts CodePipeline Failure Result
     """
     try:
-        boto3.client('codepipeline').put_job_failure_result(
+        codepipeline = boto3.client('codepipeline')
+        codepipeline.put_job_failure_result(
             jobId=job_id,
             failureDetails={'type': 'JobFailed', 'message': message}
         )
         LOGGER.info('===FAILURE===')
-    except botocore.exceptions.ClientError as err:
+        return True
+    except ClientError as err:
         LOGGER.error("Failed to PutJobFailureResult for CodePipeline!\n%s", err)
+        return False
 
 def find_instances():
     """
@@ -85,7 +92,7 @@ def find_instances():
     try:
         ec2 = boto3.client('ec2')
         instances = ec2.describe_instances(Filters=filters)
-    except botocore.exceptions.ClientError as err:
+    except ClientError as err:
         LOGGER.error("Failed to DescribeInstances with EC2!\n%s", err)
 
     try:
@@ -113,7 +120,7 @@ def send_run_command(instance_ids, commands):
             }
         )
         return 'success'
-    except botocore.exceptions.ClientError as err:
+    except ClientError as err:
         return err
 
 def handle(event, context):
@@ -132,13 +139,15 @@ def handle(event, context):
 
     instance_ids = find_instances()
     commands = ssm_commands(find_artifact(event))
-
     if len(instance_ids) != 0:
         run_command_status = send_run_command(instance_ids, commands)
         if run_command_status == 'success':
-            codepipeline_sucess(job_id)
+            codepipeline_success(job_id)
+            return True
         else:
-            codepipeline_failure(job_id, ("Run Command Failed!\n%s",
-                                          run_command_status))
+            err = "Run Command Failed!\n%s", str(run_command_status)
+            codepipeline_failure(job_id, err)
+            return False
     else:
         codepipeline_failure(job_id, 'No Instance IDs Provided!')
+        return False
