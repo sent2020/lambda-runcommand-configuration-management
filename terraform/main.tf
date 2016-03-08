@@ -14,7 +14,7 @@ module "launch_configuration" {
   source = "./lc"
   iam_instance_profile = "${module.instance_profile.profile_name}"
   region = "${var.region}"
-  key_name = "joshcb"
+  key_name = "${var.key_name}"
 }
 
 module "webserver_asg" {
