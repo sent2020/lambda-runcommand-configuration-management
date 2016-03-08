@@ -11,7 +11,7 @@
 
 # Lambda Role with Required Policy
 resource "aws_iam_role_policy" "lambda_policy" {
-    name = "subiaco_policy"
+    name = "garlc_policy"
     role = "${aws_iam_role.lambda_role.id}"
     policy = <<EOF
 {
@@ -32,7 +32,7 @@ EOF
 }
 
 resource "aws_iam_role" "lambda_role" {
-    name = "subiaco_lambda_role"
+    name = "garlc_lambda_role"
     assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -56,7 +56,7 @@ output "lambda_role_arn" {
 # Lambda Function
 resource "aws_lambda_function" "lambda_function" {
     filename = "lambda_function_payload.zip"
-    function_name = "subiaco"
+    function_name = "garlc"
     role = "${aws_iam_role.lambda_role.arn}"
     handler = "main.handle"
     description = "Continuous Configuration Management"
