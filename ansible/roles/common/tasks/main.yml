@@ -9,4 +9,4 @@
     - htop
 
 - name: Install sysdig
-  shell: curl -s https://s3.amazonaws.com/dow`nload.draios.com/stable/install-sysdig | bash
+  shell: curl -s https://s3.amazonaws.com/download.draios.com/stable/install-sysdig | bash
