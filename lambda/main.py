@@ -102,6 +102,7 @@ def find_instances():
         LOGGER.error("Unable to parse returned instances dict in " \
             "`find_instances` function!\n%s", err)
 
+    LOGGER.info("Instance IDs: " + str(instance_ids))
     return instance_ids
 
 def send_run_command(instance_ids, commands):
