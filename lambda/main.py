@@ -3,7 +3,7 @@ Triggers Run Command on all instances with tag has_ssm_agent set to true.
 Fetches artifact from S3 via CodePipeline, extracts the contents, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v3.0.1
+v1.0.0
 """
 from __future__ import print_function
 import datetime
@@ -85,10 +85,10 @@ def find_instances():
     Find Instances to invoke Run Command against
     """
     instance_ids = []
-    filters = [{
-        'Name': 'tag:has_ssm_agent',
-        'Values': ['true', 'True']
-    }]
+    filters = [
+        {'Name': 'tag:has_ssm_agent', 'Values': ['true', 'True']},
+        {'Name': 'instance-state-name', 'Values': ['running']}
+    ]
     try:
         ec2 = boto3.client('ec2')
         instances = ec2.describe_instances(Filters=filters)
@@ -102,6 +102,7 @@ def find_instances():
         LOGGER.error("Unable to parse returned instances dict in " \
             "`find_instances` function!\n%s", err)
 
+    LOGGER.info("Instance IDs: " + str(instance_ids))
     return instance_ids
 
 def send_run_command(instance_ids, commands):
