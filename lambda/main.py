@@ -85,10 +85,10 @@ def find_instances():
     Find Instances to invoke Run Command against
     """
     instance_ids = []
-    filters = [{
-        'Name': 'tag:has_ssm_agent',
-        'Values': ['true', 'True']
-    }]
+    filters = [
+        { 'Name': 'tag:has_ssm_agent', 'Values': ['true', 'True'] },
+        { 'Name': 'instance-state-name', 'Values': ['running'] }
+    ]
     try:
         ec2 = boto3.client('ec2')
         instances = ec2.describe_instances(Filters=filters)
