@@ -9,9 +9,9 @@
 # BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under the License.
 
-# Lambda Role with Required Policy
-resource "aws_iam_role_policy" "lambda_policy" {
-    name = "garlc_policy"
+# Add Lambda basic policy for logging
+resource "aws_iam_role_policy" "logging_policy" {
+    name = "logging_policy"
     role = "${aws_iam_role.lambda_role.id}"
     policy = <<EOF
 {
@@ -23,6 +23,46 @@ resource "aws_iam_role_policy" "lambda_policy" {
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
         "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+# Add CodePipeline custom action policy
+# CodePipeline currently requires codepipeline:* to get and put properly :(
+resource "aws_iam_role_policy" "codepipeline_policy" {
+    name = "codepipeline_policy"
+    role = "${aws_iam_role.lambda_role.id}"
+    policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "codepipeline:*",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+# Add an SSM Policy
+resource "aws_iam_role_policy" "ssm_policy" {
+    name = "ssm_policy"
+    role = "${aws_iam_role.lambda_role.id}"
+    policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:*",
+        "ec2:Describe*"
       ],
       "Resource": "*"
     }
