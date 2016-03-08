@@ -1,5 +1,5 @@
 resource "aws_iam_instance_profile" "profile" {
-  name = "subiaco_instance_profile"
+  name = "garlc_instance_profile"
   roles = ["${aws_iam_role.role.name}"]
 }
 
@@ -11,7 +11,7 @@ resource "aws_iam_policy_attachment" "policy" {
 }
 
 resource "aws_iam_role" "role" {
-  name = "subiaco_instance_role"
+  name = "garlc_instance_role"
   path = "/"
   assume_role_policy = <<EOF
 {

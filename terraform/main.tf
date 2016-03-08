@@ -23,7 +23,7 @@ module "webserver_asg" {
   max_size = 50
   min_size = 2
   desired_capacity = 2
-  asg_name = "subiaco_webservers"
+  asg_name = "garlc_webservers"
   roles = "webserver,appserver"
 }
 
@@ -33,6 +33,6 @@ module "database_asg" {
   max_size = 5
   min_size = 1
   desired_capacity = 1
-  asg_name = "subiaco_databases"
+  asg_name = "garlc_databases"
   roles = "dbserver"
 }
