@@ -3,7 +3,7 @@ Triggers Run Command on all instances with tag has_ssm_agent set to true.
 Fetches artifact from S3 via CodePipeline, extracts the contents, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v1.0.0
+v1.1.1
 """
 from __future__ import print_function
 import datetime
@@ -91,7 +91,8 @@ def find_instances():
     ]
     try:
         ec2 = boto3.client('ec2')
-        instances = ec2.describe_instances(Filters=filters)
+        # TODO: add pagination to the below call, MaxResults max is 1000
+        instances = ec2.describe_instances(Filters=filters, MaxResults=1000)
     except ClientError as err:
         LOGGER.error("Failed to DescribeInstances with EC2!\n%s", err)
 
@@ -104,6 +105,29 @@ def find_instances():
 
     LOGGER.info("Instance IDs: " + str(instance_ids))
     return instance_ids
+
+def break_instance_ids_into_chunks(instance_ids):
+    """
+    Returns successive chunks of 50 from instance_ids
+    """
+    size = 50
+    return [instance_ids[i:i + size] for i in range(0, len(instance_ids), size)]
+
+def execute_runcommand(chunked_instance_ids, commands, job_id):
+    """
+    Execute RunCommand for each chunk of instances
+    """
+    success = True
+    for chunk in chunked_instance_ids:
+        if send_run_command(chunk, commands) is False:
+            success = False # continue iterating but make sure we fail the pipeline
+
+    if success:
+        codepipeline_success(job_id)
+        return True
+    else:
+        codepipeline_failure(job_id, 'Not all RunCommand calls completed, see log.')
+        return False
 
 def send_run_command(instance_ids, commands):
     """
@@ -120,9 +144,10 @@ def send_run_command(instance_ids, commands):
                 'executionTimeout': ['120']
             }
         )
-        return 'success'
+        return True
     except ClientError as err:
-        return err
+        LOGGER.error("Run Command Failed!\n%s", str(err))
+        return False
 
 def handle(event, context):
     """
@@ -141,14 +166,9 @@ def handle(event, context):
     instance_ids = find_instances()
     commands = ssm_commands(find_artifact(event))
     if len(instance_ids) != 0:
-        run_command_status = send_run_command(instance_ids, commands)
-        if run_command_status == 'success':
-            codepipeline_success(job_id)
-            return True
-        else:
-            err = "Run Command Failed!\n%s", str(run_command_status)
-            codepipeline_failure(job_id, err)
-            return False
+        chunked_instance_ids = break_instance_ids_into_chunks(instance_ids)
+        execute_runcommand(chunked_instance_ids, commands, job_id)
+        return True
     else:
         codepipeline_failure(job_id, 'No Instance IDs Provided!')
         return False

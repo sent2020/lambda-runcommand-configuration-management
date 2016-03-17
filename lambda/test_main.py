@@ -12,6 +12,8 @@ from main import codepipeline_failure
 from main import find_instances
 from main import send_run_command
 from main import handle
+from main import execute_runcommand
+from main import break_instance_ids_into_chunks
 from freezegun import freeze_time
 
 def test_log_event_and_context():
@@ -156,7 +158,7 @@ def test_send_run_command(mock_client):
     ssm = MagicMock()
     mock_client.return_value = ssm
     ssm.send_command.return_value = True
-    assert send_run_command(['abcdef-12345'], ['blah']) == 'success'
+    assert send_run_command(['abcdef-12345'], ['blah']) == True
 
 @patch('boto3.client')
 def test_send_run_command_invalid(mock_client):
@@ -175,7 +177,7 @@ def test_send_run_command_invalid(mock_client):
     assert send_run_command(['abcdef-12345'], ['blah']) != 'success'
 
 @patch('main.codepipeline_success')
-@patch('main.send_run_command')
+@patch('main.execute_runcommand')
 @patch('main.find_artifact')
 @patch('main.ssm_commands')
 @patch('main.find_instances')
@@ -189,7 +191,7 @@ def test_handle(mock_log, mock_instances, mock_commands,
     mock_instances.return_value = ['abcdef-12345']
     mock_commands.return_value = True
     mock_artifact.return_value = True
-    mock_run_command.return_value = 'success'
+    mock_run_command.return_value = True
     mock_success.return_value = True
     event = {
         'CodePipeline.job': {
@@ -220,26 +222,28 @@ def test_handle_no_instances(mock_log, mock_instances, mock_commands,
     }
     assert handle(event, 'Test') == False
 
+@patch('main.codepipeline_success')
+@patch('main.send_run_command')
+def test_execute_runcommand(mock_run_command, mock_success):
+    """
+    Test the execute_runcommand function with valid input
+    """
+    mock_run_command.return_value = True
+    mock_success.return_value = True
+    chunked_instance_ids = ['abcdef-12345']
+    commands = ['blah']
+    job_id = 1
+    assert execute_runcommand(chunked_instance_ids, commands, job_id) == True
+
 @patch('main.codepipeline_failure')
 @patch('main.send_run_command')
-@patch('main.find_artifact')
-@patch('main.ssm_commands')
-@patch('main.find_instances')
-@patch('main.log_event_and_context')
-def test_handle_run_command_fails(mock_log, mock_instances, mock_commands,
-                                  mock_artifact, mock_run_command, mock_failure):
+def test_execute_runcommand_failed(mock_run_command, mock_failure):
     """
-    Test the handle function with valid input and no instances
+    Test the execute_runcommand function with valid input
     """
-    mock_log.return_value = True
-    mock_instances.return_value = ['abcdef-12345']
-    mock_commands.return_value = True
-    mock_artifact.return_value = True
     mock_run_command.return_value = False
     mock_failure.return_value = True
-    event = {
-        'CodePipeline.job': {
-            'id': 'abc123'
-        }
-    }
-    assert handle(event, 'Test') == False
+    chunked_instance_ids = ['abcdef-12345']
+    commands = ['blah']
+    job_id = 1
+    assert execute_runcommand(chunked_instance_ids, commands, job_id) == False
