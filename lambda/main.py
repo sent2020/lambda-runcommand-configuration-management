@@ -82,13 +82,20 @@ def find_instances():
         {'Name': 'instance-state-name', 'Values': ['running']}
     ]
     try:
-        ec2 = boto3.resource('ec2')
-        instance_ids = [i.id for i in ec2.instances.all().filter(Filters=filters)]
+        instance_ids = find_instance_ids(filters)
+        print(instance_ids)
     except ClientError as err:
         LOGGER.error("Failed to DescribeInstances with EC2!\n%s", err)
 
     LOGGER.info("Instance IDs: " + str(instance_ids))
     return instance_ids
+
+def find_instance_ids(filters):
+    """
+    EC2 API calls to retrieve instances matched by the filter
+    """
+    ec2 = boto3.resource('ec2')
+    return [i.id for i in ec2.instances.all().filter(Filters=filters)]
 
 def break_instance_ids_into_chunks(instance_ids):
     """
