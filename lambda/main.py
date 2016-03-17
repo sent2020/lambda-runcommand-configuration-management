@@ -87,7 +87,6 @@ def find_instances():
     except ClientError as err:
         LOGGER.error("Failed to DescribeInstances with EC2!\n%s", err)
 
-    LOGGER.info("Instance IDs: " + str(instance_ids))
     return instance_ids
 
 def find_instance_ids(filters):
@@ -102,7 +101,10 @@ def break_instance_ids_into_chunks(instance_ids):
     Returns successive chunks of 50 from instance_ids
     """
     size = 50
-    return [instance_ids[i:i + size] for i in range(0, len(instance_ids), size)]
+    chunks = []
+    for i in range(0, len(instance_ids), size):
+        chunks.append(instance_ids[i:i + size])
+    return chunks
 
 def execute_runcommand(chunked_instance_ids, commands, job_id):
     """
