@@ -4,7 +4,6 @@ Unit Tests for trigger_run_command Lambda function
 import pytest
 from botocore.exceptions import ClientError
 from mock import MagicMock, patch
-from main import log_event_and_context
 from main import find_artifact
 from main import ssm_commands
 from main import codepipeline_success
@@ -15,15 +14,9 @@ from main import handle
 from main import execute_runcommand
 from freezegun import freeze_time
 
-def test_log_event_and_context():
-    """
-    Test the log_event_and_context function
-    """
-    assert log_event_and_context
-
 def test_find_artifact():
     """
-    Test the log_event_and_context function with valid event
+    Test the find_artifact function with valid event
     """
     event = {
         'CodePipeline.job': {
@@ -43,7 +36,7 @@ def test_find_artifact():
 
 def test_find_artifact_invalid():
     """
-    Test the log_event_and_context function with invalid event
+    Test the find_artifact function with invalid event
     """
     event = {}
     with pytest.raises(KeyError):
@@ -174,13 +167,11 @@ def test_send_run_command_invalid(mock_client):
 @patch('main.find_artifact')
 @patch('main.ssm_commands')
 @patch('main.find_instances')
-@patch('main.log_event_and_context')
-def test_handle(mock_log, mock_instances, mock_commands,
-                mock_artifact, mock_run_command, mock_success):
+def test_handle(mock_instances, mock_commands, mock_artifact, mock_run_command,
+                mock_success):
     """
     Test the handle function with valid input and instances
     """
-    mock_log.return_value = True
     mock_instances.return_value = ['abcdef-12345']
     mock_commands.return_value = True
     mock_artifact.return_value = True
@@ -197,13 +188,11 @@ def test_handle(mock_log, mock_instances, mock_commands,
 @patch('main.find_artifact')
 @patch('main.ssm_commands')
 @patch('main.find_instances')
-@patch('main.log_event_and_context')
-def test_handle_no_instances(mock_log, mock_instances, mock_commands,
-                             mock_artifact, mock_failure):
+def test_handle_no_instances(mock_instances, mock_commands, mock_artifact,
+                             mock_failure):
     """
     Test the handle function with valid input and no instances
     """
-    mock_log.return_value = True
     mock_instances.return_value = []
     mock_commands.return_value = True
     mock_artifact.return_value = True
