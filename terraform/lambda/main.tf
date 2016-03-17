@@ -102,6 +102,6 @@ resource "aws_lambda_function" "lambda_function" {
     description = "Continuous Configuration Management"
     memory_size = 128
     runtime = "python2.7"
-    timeout = 5
+    timeout = 60
     source_code_hash = "${base64encode(sha256(file("lambda_function_payload.zip")))}"
 }
