@@ -121,7 +121,7 @@ def execute_runcommand(chunked_instance_ids, commands, job_id):
         if send_run_command(chunk, commands) is False:
             success = False # continue iterating but make sure we fail the pipeline
 
-    if success is True:
+    if success:
         codepipeline_success(job_id)
         return True
     else:
@@ -167,6 +167,7 @@ def handle(event, context):
     if len(instance_ids) != 0:
         chunked_instance_ids = break_instance_ids_into_chunks(instance_ids)
         execute_runcommand(chunked_instance_ids, commands, job_id)
+        return True
     else:
         codepipeline_failure(job_id, 'No Instance IDs Provided!')
         return False
