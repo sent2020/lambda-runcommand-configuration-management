@@ -109,16 +109,14 @@ def test_codepipeline_failure_with_exception(mock_client):
     codepipeline.put_job_failure_result.side_effect = ClientError(err_msg, 'Test')
     assert codepipeline_failure(1, 'blah') is False
 
-@patch('boto3.resource')
-def test_find_instances(mock_client):
+@patch('main.find_instance_ids')
+def test_find_instances(mock_instances):
     """
     Test the find_instances function without errors
     """
-    ec2 = MagicMock()
-    mock_client.return_value = ec2
     instances = ['abcdef-12345']
-    ec2.instances.return_value.all.return_value.filter.return_value = instances
-    assert find_instances() == 'balls'
+    mock_instances.return_value = instances
+    assert find_instances() == instances
 
 @patch('boto3.resource')
 def test_find_instances_boto_error(mock_client):
