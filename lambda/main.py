@@ -90,18 +90,10 @@ def find_instances():
         {'Name': 'instance-state-name', 'Values': ['running']}
     ]
     try:
-        ec2 = boto3.client('ec2')
-        # TODO: add pagination to the below call, MaxResults max is 1000
-        instances = ec2.describe_instances(Filters=filters, MaxResults=1000)
+        ec2 = boto3.resource('ec2')
+        instance_ids = [i.id for i in ec2.instances.all().filter(Filters=filters)]
     except ClientError as err:
         LOGGER.error("Failed to DescribeInstances with EC2!\n%s", err)
-
-    try:
-        for instance in instances['Reservations']:
-            instance_ids.append(instance['Instances'][0]['InstanceId'])
-    except KeyError as err:
-        LOGGER.error("Unable to parse returned instances dict in " \
-            "`find_instances` function!\n%s", err)
 
     LOGGER.info("Instance IDs: " + str(instance_ids))
     return instance_ids
