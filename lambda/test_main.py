@@ -13,7 +13,6 @@ from main import find_instances
 from main import send_run_command
 from main import handle
 from main import execute_runcommand
-from main import break_instance_ids_into_chunks
 from freezegun import freeze_time
 
 def test_log_event_and_context():
@@ -117,24 +116,18 @@ def test_codepipeline_failure_invalid(mock_client):
     codepipeline.put_job_failure_result.side_effect = ClientError(err_msg, 'Test')
     assert codepipeline_failure(1, 'blah') == False
 
-@patch('boto3.client')
+@patch('boto3.resource')
 def test_find_instances(mock_client):
     """
     Test the find_instances function without errors
     """
     ec2 = MagicMock()
-    instances = {
-        'Reservations': [{
-            'Instances': [{
-                'InstanceId': 'abcdef-12345'
-            }]
-        }]
-    }
+    instances = ['abcdef-12345']
     mock_client.return_value = ec2
-    ec2.describe_instances.return_value = instances
-    assert find_instances() == ['abcdef-12345']
+    ec2.instances.return_value.all.return_value.filter.return_value = instances
+    assert find_instances() == instances
 
-@patch('boto3.client')
+@patch('boto3.resource')
 def test_find_instances_boto_error(mock_client):
     """
     Test the find_instances function when a boto exception occurs
@@ -147,7 +140,7 @@ def test_find_instances_boto_error(mock_client):
         }
     }
     mock_client.return_value = ec2
-    mock_client.describe_instances = ClientError(err_msg, 'Test')
+    mock_client.instances.side_effect = ClientError(err_msg, 'Test')
     assert find_instances() == []
 
 @patch('boto3.client')
