@@ -65,10 +65,10 @@ def test_codepipeline_success(mock_client):
     codepipeline = MagicMock()
     mock_client.return_value = codepipeline
     codepipeline.put_job_success_result.return_value = True
-    assert codepipeline_success(1) == True
+    assert codepipeline_success(1)
 
 @patch('boto3.client')
-def test_codepipeline_success_invalid(mock_client):
+def test_codepipeline_success_with_exception(mock_client):
     """
     Test the codepipeline_success function when a boto exception occurs
     """
@@ -81,7 +81,7 @@ def test_codepipeline_success_invalid(mock_client):
         }
     }
     codepipeline.put_job_success_result.side_effect = ClientError(err_msg, 'Test')
-    assert codepipeline_success(1) == False
+    assert codepipeline_success(1) is False
 
 @patch('boto3.client')
 def test_codepipeline_failure(mock_client):
@@ -91,10 +91,10 @@ def test_codepipeline_failure(mock_client):
     codepipeline = MagicMock()
     mock_client.return_value = codepipeline
     codepipeline.put_job_failure_result.return_value = True
-    assert codepipeline_failure(1, 'blah') == True
+    assert codepipeline_failure(1, 'blah')
 
 @patch('boto3.client')
-def test_codepipeline_failure_invalid(mock_client):
+def test_codepipeline_failure_with_exception(mock_client):
     """
     Test the codepipeline_failure function when a boto exception occurs
     """
@@ -107,7 +107,7 @@ def test_codepipeline_failure_invalid(mock_client):
         }
     }
     codepipeline.put_job_failure_result.side_effect = ClientError(err_msg, 'Test')
-    assert codepipeline_failure(1, 'blah') == False
+    assert codepipeline_failure(1, 'blah') is False
 
 @patch('boto3.resource')
 def test_find_instances(mock_client):
@@ -115,10 +115,10 @@ def test_find_instances(mock_client):
     Test the find_instances function without errors
     """
     ec2 = MagicMock()
-    instances = ['abcdef-12345']
     mock_client.return_value = ec2
+    instances = ['abcdef-12345']
     ec2.instances.return_value.all.return_value.filter.return_value = instances
-    assert find_instances() == instances
+    assert find_instances() == 'balls'
 
 @patch('boto3.resource')
 def test_find_instances_boto_error(mock_client):
@@ -133,7 +133,7 @@ def test_find_instances_boto_error(mock_client):
         }
     }
     mock_client.return_value = ec2
-    mock_client.instances.side_effect = ClientError(err_msg, 'Test')
+    ec2.instances.side_effect = ClientError(err_msg, 'Test')
     assert find_instances() == []
 
 @patch('boto3.client')
@@ -144,7 +144,7 @@ def test_send_run_command(mock_client):
     ssm = MagicMock()
     mock_client.return_value = ssm
     ssm.send_command.return_value = True
-    assert send_run_command(['abcdef-12345'], ['blah']) == True
+    assert send_run_command(['abcdef-12345'], ['blah'])
 
 @patch('boto3.client')
 def test_send_run_command_invalid(mock_client):
@@ -160,7 +160,7 @@ def test_send_run_command_invalid(mock_client):
         }
     }
     ssm.send_command.side_effect = ClientError(err_msg, 'Test')
-    assert send_run_command(['abcdef-12345'], ['blah']) != 'success'
+    assert send_run_command(['abcdef-12345'], ['blah']) is False
 
 @patch('main.codepipeline_success')
 @patch('main.execute_runcommand')
@@ -182,7 +182,7 @@ def test_handle(mock_instances, mock_commands, mock_artifact, mock_run_command,
             'id': 'abc123'
         }
     }
-    assert handle(event, 'Test') == True
+    assert handle(event, 'Test')
 
 @patch('main.codepipeline_failure')
 @patch('main.find_artifact')
@@ -202,7 +202,7 @@ def test_handle_no_instances(mock_instances, mock_commands, mock_artifact,
             'id': 'abc123'
         }
     }
-    assert handle(event, 'Test') == False
+    assert handle(event, 'Test') is False
 
 @patch('main.codepipeline_success')
 @patch('main.send_run_command')
@@ -215,7 +215,7 @@ def test_execute_runcommand(mock_run_command, mock_success):
     chunked_instance_ids = ['abcdef-12345']
     commands = ['blah']
     job_id = 1
-    assert execute_runcommand(chunked_instance_ids, commands, job_id) == True
+    assert execute_runcommand(chunked_instance_ids, commands, job_id)
 
 @patch('main.codepipeline_failure')
 @patch('main.send_run_command')
@@ -228,4 +228,4 @@ def test_execute_runcommand_failed(mock_run_command, mock_failure):
     chunked_instance_ids = ['abcdef-12345']
     commands = ['blah']
     job_id = 1
-    assert execute_runcommand(chunked_instance_ids, commands, job_id) == False
+    assert execute_runcommand(chunked_instance_ids, commands, job_id) is False
