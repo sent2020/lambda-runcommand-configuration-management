@@ -91,7 +91,8 @@ def find_instances():
     ]
     try:
         ec2 = boto3.client('ec2')
-        instances = ec2.describe_instances(Filters=filters)
+        # TODO: add pagination to the below call, MaxResults max is 1000
+        instances = ec2.describe_instances(Filters=filters, MaxResults=1000)
     except ClientError as err:
         LOGGER.error("Failed to DescribeInstances with EC2!\n%s", err)
 
