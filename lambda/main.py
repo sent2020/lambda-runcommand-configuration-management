@@ -3,7 +3,7 @@ Triggers Run Command on all instances with tag has_ssm_agent set to true.
 Fetches artifact from S3 via CodePipeline, extracts the contents, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v1.1.0
+v1.1.1
 """
 from __future__ import print_function
 import datetime
