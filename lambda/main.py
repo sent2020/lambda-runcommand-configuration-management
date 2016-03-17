@@ -133,7 +133,7 @@ def send_run_command(instance_ids, commands):
         LOGGER.error("Run Command Failed!\n%s", str(err))
         return False
 
-def handle(event, context):
+def handle(event, _context):
     """
     Lambda main handler
     """
