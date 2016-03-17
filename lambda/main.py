@@ -14,14 +14,6 @@ import boto3
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 
-def log_event_and_context(event, context):
-    """Logs event information for debugging"""
-    LOGGER.info("====================================================")
-    LOGGER.info(context)
-    LOGGER.info("====================================================")
-    LOGGER.info(event)
-    LOGGER.info("====================================================")
-
 def find_artifact(event):
     """
     Returns the S3 Object that holds the artifact
@@ -145,14 +137,10 @@ def handle(event, context):
     """
     Lambda main handler
     """
-    log_event_and_context(event, context)
+    LOGGER.info(event)
     try:
         job_id = event['CodePipeline.job']['id']
     except KeyError as err:
-        # TODO
-        # Better handle manual lambda invocations
-        # This will cause a ParamValidationError
-        job_id = 1
         LOGGER.error("Could not retrieve CodePipeline Job ID!\n%s", err)
 
     instance_ids = find_instances()
