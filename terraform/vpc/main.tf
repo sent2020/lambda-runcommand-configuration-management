@@ -36,5 +36,5 @@ output "vpcid" {
   value = "${aws_vpc.garlc-vpc.id}"
 }
 output "subnet" {
-  value = "$aws_subnet.garlc-subnet.id"
+  value = "${aws_subnet.garlc-subnet.id}"
 }
