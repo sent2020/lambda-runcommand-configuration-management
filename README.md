@@ -15,7 +15,7 @@ CodePipeline
 * Profit
 
 # Setup Instructions for a Demo
-** WARNING: Launching infrastructure with this demo might cost you money.**
+**WARNING:  Using this code may cost you money.  Please be sure you understand your current usage and the costs associated with this reference code before launching in your AWS account.**
 1. Fork this repo.
 * Install [Terraform](https://www.terraform.io/downloads.html) to help setup the infrastructure required for GARLC.
 * In your fork, modify `terraform/variables.tf` to add the name of a keypair you can use to login to the instances that will be created.  You can also change the region specified in the same file if you want to use something other than us-east-1.
