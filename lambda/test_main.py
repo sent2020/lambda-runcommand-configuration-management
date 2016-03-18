@@ -2,6 +2,7 @@
 Unit Tests for trigger_run_command Lambda function
 """
 import pytest
+import boto3
 from botocore.exceptions import ClientError
 from mock import MagicMock, patch
 from main import find_artifact
@@ -12,6 +13,7 @@ from main import find_instances
 from main import send_run_command
 from main import handle
 from main import execute_runcommand
+from main import find_instance_ids
 from freezegun import freeze_time
 
 def test_find_artifact():
@@ -133,6 +135,17 @@ def test_find_instances_boto_error(mock_client):
     mock_client.return_value = ec2
     ec2.instances.side_effect = ClientError(err_msg, 'Test')
     assert find_instances() == []
+
+@patch('boto3.resources.collection.ResourceCollection.filter')
+def test_find_instance_ids(mock_resource):
+    """
+    Test the find_instance_ids function
+    """
+    instance_id = 'abcdef-12345'
+    instance = [MagicMock(id=instance_id)]
+    boto3.setup_default_session(region_name='us-east-1')
+    mock_resource.return_value = instance
+    assert find_instance_ids('blah') == [instance_id]
 
 @patch('boto3.client')
 def test_send_run_command(mock_client):
