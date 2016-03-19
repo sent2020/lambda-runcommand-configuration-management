@@ -11,7 +11,7 @@ pipeline_name = 'GARLC'
 #find S3 bucket that codedeploy uses
 def find_bucket(pipeline_name):
     client = boto3.client('codepipeline')
-    pipeline = client.get_pipeline(
+    pipeline_bucket = client.get_pipeline(
     name = pipeline_name
     )
     return pipeline_bucket['pipeline']['artifactStore']['location']
