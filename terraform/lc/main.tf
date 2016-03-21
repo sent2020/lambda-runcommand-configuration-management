@@ -1,6 +1,3 @@
-provider "aws" {
-  region = "${var.region}"
-}
 resource "aws_launch_configuration" "garlc" {
   lifecycle { create_before_destroy = true }
   name_prefix = "garlc-"
@@ -21,6 +18,7 @@ output "lcid" {
 resource "aws_security_group" "garlc_demo_sg" {
   name = "garlc_demo_sg"
   description = "Demo SG this ol boy aint secure"
+  vpc_id = "${var.vpc_id}"
   ingress {
     from_port = 80
     to_port = 80
