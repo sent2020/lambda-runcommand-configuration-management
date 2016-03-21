@@ -11,14 +11,15 @@ pipeline_name = 'GARLC'
 #find S3 bucket that codedeploy uses
 def find_bucket(pipeline_name):
     client = boto3.client('codepipeline')
-    pipeline = client.get_pipeline(
-    name = pipeline_name
-    )
+    pipeline = client.get_pipeline(name = pipeline_name)
     return pipeline_bucket['pipeline']['artifactStore']['location']
 
 #find newest artifact in S3 bucket
 def find_newest_artifact(bucket):
-    pass
+objects = s3.list_objects(Bucket=bucket)
+for i in objects['Contents']:
+     myobjects = i['Key'], i['LastModified']
+#this just gets the key and modified date, struggling with sorting by datetime type
 
 #do runcommand stuff
 
