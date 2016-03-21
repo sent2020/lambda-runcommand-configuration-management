@@ -16,10 +16,10 @@ def find_bucket(pipeline_name):
 
 #find newest artifact in S3 bucket
 def find_newest_artifact(bucket):
-objects = s3.list_objects(Bucket=bucket)
-for i in objects['Contents']:
-     myobjects = i['Key'], i['LastModified']
-#this just gets the key and modified date, struggling with sorting by datetime type
+    s3 = boto3.client('s3')
+    objects = s3.list_objects(Bucket=bucket)
+    list = [i['LastModified'] for i in objects['Contents']]
+    return sorted(list[-1])
 
 #do runcommand stuff
 
