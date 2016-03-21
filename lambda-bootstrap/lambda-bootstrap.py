@@ -11,7 +11,7 @@ pipeline_name = 'GARLC'
 #find S3 bucket that codedeploy uses
 def find_bucket(pipeline_name):
     client = boto3.client('codepipeline')
-    pipeline_bucket = client.get_pipeline(
+    pipeline = client.get_pipeline(
     name = pipeline_name
     )
     return pipeline_bucket['pipeline']['artifactStore']['location']
@@ -35,7 +35,7 @@ def get_instance_id(event):
         return event['detail']['EC2InstanceId']
     except KeyError as err:
         LOGGER.error(err)
-        return False
+    return False
 
 def build_lifecycle_args(event):
     try:
@@ -45,29 +45,16 @@ def build_lifecycle_args(event):
         return hookname, groupname, token
     except (IOError, ClientError, KeyError) as err:
         LOGGER.error(err)
-        return False
+    return False
 
-def complete_lifecycle_action(hookname, groupname, token):
-    try:
-        autoscaling = boto3.client('autoscaling')
-        autoscaling.complete_lifecycle_action(hookname, groupname, token, LifecycleActionResult='CONTINUE')
-    except (IOError, ClientError, KeyError) as err:
-        LOGGER.error(err)
-        return False
 
 def handle(event, _context):
     """Lambda Handler"""
     log_event(event)
 #need to include getting S3 bucket and artifact steps
-    instance_id = get_instance_id(event)
-    try:
-        deregister_container_instance(instance_id)
-    except (IOError, ClientError, KeyError) as err:
-        LOGGER.error(err)
-
-
-    with build_lifecycle_args(event):
         try:
-            complete_lifecycle_action(hookname, groupname, token)
+            hookname, groupname, token = build_lifecycle_args(event)
+            autoscaling = boto3.client('autoscaling')
+            autoscaling.complete_lifecycle_action(LifecycleHookName=hookname, AutoScalingGroupName=groupname, LifecycleActionToken=token, LifecycleActionResult="CONTINUE")
         except (IOError, ClientError, KeyError) as err:
             LOGGER.error(err)
