@@ -1,3 +1,12 @@
+"""
+This AWS Lambda function is intended to be invoked via a lifecycle hook
+from a new instance launch. New instances will fetch the latest codepipeline
+artifact from S3 and execute it with runcommand. After runcommand is invoked,
+complete the lifecycle action.
+chavisb@amazon.com
+v0.0.1
+"""
+
 import logging
 import boto3
 import datetime
@@ -13,9 +22,13 @@ def find_bucket(pipeline_name):
     """
     find S3 bucket that codedeploy uses and return bucket name
     """
-    codepipeline = boto3.client('codepipeline')
-    pipeline = codepipeline.get_pipeline(name=pipeline_name)
-    return pipeline['pipeline']['artifactStore']['location']
+    try:
+        codepipeline = boto3.client('codepipeline')
+        pipeline = codepipeline.get_pipeline(name=pipeline_name)
+        return pipeline['pipeline']['artifactStore']['location']
+    except (IOError, ClientError, KeyError) as err:
+        LOGGER.error(err)
+    return False
 
 #find newest artifact in S3 bucket
 def find_newest_artifact(bucket):
@@ -23,10 +36,14 @@ def find_newest_artifact(bucket):
     find and return the newest artifact in codepipeline bucket
     TODO: implement boto collections to support more than 1000 artifacts per bucket
     """
-    s3 = boto3.client('s3')
-    objects = s3.list_objects(Bucket=bucket)
-    list = [i['LastModified'] for i in objects['Contents']]
-    return sorted(list[-1])
+    try:
+        s3 = boto3.client('s3')
+        objects = s3.list_objects(Bucket=bucket)
+        list = [i['LastModified'] for i in objects['Contents']]
+        return sorted(list[-1])
+    except (IOError, ClientError, KeyError) as err:
+        LOGGER.error(err)
+    return False
 
 #do runcommand stuff
 def ssm_commands(artifact):
