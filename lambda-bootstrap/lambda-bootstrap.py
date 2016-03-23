@@ -1,5 +1,6 @@
 import logging
 import boto3
+import datetime
 from botocore.exceptions import ClientError
 
 LOGGER = logging.getLogger()
@@ -8,14 +9,20 @@ LOGGER.setLevel(logging.INFO)
 #assume we're always using a pipeline name GARLC
 pipeline_name = 'GARLC'
 
-#find S3 bucket that codedeploy uses
 def find_bucket(pipeline_name):
-    client = boto3.client('codepipeline')
-    pipeline = client.get_pipeline(name = pipeline_name)
-    return pipeline_bucket['pipeline']['artifactStore']['location']
+    """
+    find S3 bucket that codedeploy uses and return bucket name
+    """
+    codepipeline = boto3.client('codepipeline')
+    pipeline = codepipeline.get_pipeline(name=pipeline_name)
+    return pipeline['pipeline']['artifactStore']['location']
 
 #find newest artifact in S3 bucket
 def find_newest_artifact(bucket):
+    """
+    find and return the newest artifact in codepipeline bucket
+    TODO: implement boto collections to support more than 1000 artifacts per bucket
+    """
     s3 = boto3.client('s3')
     objects = s3.list_objects(Bucket=bucket)
     list = [i['LastModified'] for i in objects['Contents']]
@@ -69,7 +76,7 @@ def handle(event, _context):
     log_event(event)
 try:
 #pass find_newest_artifact() the bucket name output from find_bucket()
-    artifact = find_newest_artifact(find_bucket(bucket))
+    artifact = find_newest_artifact(find_bucket(pipeline_name))
 except (IOError, ClientError, KeyError) as err:
     LOGGER.error(err)
 try:
@@ -79,8 +86,13 @@ except (IOError, ClientError, KeyError) as err:
     LOGGER.error(err)
 try:
 #signal lifecycle action
-hookname, groupname, token = build_lifecycle_args(event)
-autoscaling = boto3.client('autoscaling')
-autoscaling.complete_lifecycle_action(LifecycleHookName=hookname, AutoScalingGroupName=groupname, LifecycleActionToken=token, LifecycleActionResult="CONTINUE")
+    hookname, groupname, token = build_lifecycle_args(event)
+    autoscaling = boto3.client('autoscaling')
+    autoscaling.complete_lifecycle_action(
+        LifecycleHookName=hookname,
+        AutoScalingGroupName=groupname,
+        LifecycleActionToken=token,
+        LifecycleActionResult="CONTINUE"
+        )
 except (IOError, ClientError, KeyError) as err:
     LOGGER.error(err)
