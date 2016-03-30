@@ -1,8 +1,8 @@
 """
-This AWS Lambda function is intended to be invoked via a lifecycle hook
-from a new instance launch. New instances will fetch the latest codepipeline
-artifact from S3 and execute it with runcommand. After runcommand is invoked,
-complete the lifecycle action.
+This AWS Lambda function is intended to be invoked via a Cloudwatch Event for a
+new intance launch. We get the instance ID from the event message, find our pipeline
+bucket, the latest artifact in the bucket, tell the new instance to grab the
+artifact, and finally execute it locally via runcommand.
 chavisb@amazon.com
 v0.0.1
 """
@@ -34,8 +34,9 @@ def find_bucket(pipeline_name):
 def find_newest_artifact(bucket):
     """
     find and return the newest artifact in codepipeline bucket
-    TODO: implement boto collections to support more than 1000 artifacts per bucket
     """
+    #TODO
+    #implement boto collections to support more than 1000 artifacts per bucket
     try:
         s3 = boto3.client('s3')
         objects = s3.list_objects(Bucket=bucket)
@@ -62,6 +63,25 @@ def ssm_commands(artifact):
         'ansible-playbook -i "/tmp/inventory" /tmp/{0}/ansible/playbook.yml'.format(timestamp)
     ]
 
+def send_run_command(instance_id, commands):
+    """
+    Sends the Run Command API Call
+    """
+    try:
+        ssm = boto3.client('ssm')
+        ssm.send_command(
+            InstanceId=instance_id,
+            DocumentName='AWS-RunShellScript',
+            TimeoutSeconds=300,
+            Parameters={
+                'commands': commands,
+                'executionTimeout': ['120']
+            }
+        )
+        return 'success'
+    except ClientError as err:
+        return err
+
 def log_event(event):
     """Logs event information for debugging"""
     LOGGER.info("====================================================")
@@ -69,7 +89,6 @@ def log_event(event):
     LOGGER.info("====================================================")
 
 #Grab the instance ID out of the "event" dict sent by cloudwatch events
-#We are not using this function right now, not sure if necessary
 def get_instance_id(event):
     try:
         return event['detail']['EC2InstanceId']
@@ -77,20 +96,15 @@ def get_instance_id(event):
         LOGGER.error(err)
     return False
 
-def build_lifecycle_args(event):
-    try:
-        hookname = event['detail']['LifecycleHookName']
-        groupname = event['detail']['AutoScalingGroupName']
-        token = event['detail']['LifecycleActionToken']
-        return hookname, groupname, token
-    except (IOError, ClientError, KeyError) as err:
-        LOGGER.error(err)
-    return False
 
 
 def handle(event, _context):
     """Lambda Handler"""
     log_event(event)
+try:
+    instance_id = get_instance_id(event)
+except (IOError, ClientError, KeyError) as err:
+    LOGGER.error(err)
 try:
 #pass find_newest_artifact() the bucket name output from find_bucket()
     artifact = find_newest_artifact(find_bucket(pipeline_name))
@@ -98,18 +112,10 @@ except (IOError, ClientError, KeyError) as err:
     LOGGER.error(err)
 try:
 #tell runcommand the artifact name
-    ssm_commands(artifact)
+    commands = ssm_commands(artifact)
 except (IOError, ClientError, KeyError) as err:
     LOGGER.error(err)
 try:
-#signal lifecycle action
-    hookname, groupname, token = build_lifecycle_args(event)
-    autoscaling = boto3.client('autoscaling')
-    autoscaling.complete_lifecycle_action(
-        LifecycleHookName=hookname,
-        AutoScalingGroupName=groupname,
-        LifecycleActionToken=token,
-        LifecycleActionResult="CONTINUE"
-        )
+    send_run_command(instance_id, commands)
 except (IOError, ClientError, KeyError) as err:
     LOGGER.error(err)
