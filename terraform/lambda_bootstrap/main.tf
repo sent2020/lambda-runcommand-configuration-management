@@ -152,6 +152,7 @@ PATTERN
 #allow CW Events to invoke Lambda
   resource "aws_cloudwatch_event_target" "lambda" {
     depends_on = ["aws_iam_role.lambda_role"] # we need the Lambda arn to exist
-    rule = "${aws_cloudwatch_event_rule.instance_termination.name}"
+    rule = "${aws_cloudwatch_event_rule.instance_running.name}"
     target_id = "lambda_bootstrap"
-    arn = "${aws_lambda_function.lambda_function.arn}"
+    arn = "${aws_lambda_function.lambda_bootstrap_function.arn}"
+}
