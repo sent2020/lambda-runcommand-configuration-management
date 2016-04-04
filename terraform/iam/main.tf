@@ -1,6 +1,11 @@
 resource "aws_iam_instance_profile" "profile" {
   name = "garlc_instance_profile"
   roles = ["${aws_iam_role.role.name}"]
+  # Hack to fix an issue where the profile isn't
+  # propagted before the LC tries to launch instances.
+  provisioner "local-exec" {
+    command = "sleep 10"
+  }
 }
 
 # Add an EC2 Read Only Policy
