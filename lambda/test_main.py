@@ -15,26 +15,14 @@ from main import handle
 from main import execute_runcommand
 from main import find_instance_ids
 from freezegun import freeze_time
+from aws_lambda_sample_events import SampleEvent
 
 def test_find_artifact():
     """
     Test the find_artifact function with valid event
     """
-    event = {
-        'CodePipeline.job': {
-            'data': {
-                'inputArtifacts': [{
-                    'location': {
-                        's3Location': {
-                            'objectKey': 'test/key',
-                            'bucketName': 'bucket'
-                        }
-                    }
-                }]
-            }
-        }
-    }
-    assert find_artifact(event) == 's3://bucket/test/key'
+    codepipeline = SampleEvent('codepipeline')
+    assert find_artifact(codepipeline.event) == 's3://codepipeline-us-east-1-123456789000/pipeline/MyApp/random.zip'
 
 def test_find_artifact_invalid():
     """
@@ -188,12 +176,8 @@ def test_handle(mock_instances, mock_commands, mock_artifact, mock_run_command,
     mock_artifact.return_value = True
     mock_run_command.return_value = True
     mock_success.return_value = True
-    event = {
-        'CodePipeline.job': {
-            'id': 'abc123'
-        }
-    }
-    assert handle(event, 'Test')
+    codepipeline = SampleEvent('codepipeline')
+    assert handle(codepipeline.event, 'Test')
 
 @patch('main.codepipeline_failure')
 @patch('main.find_artifact')
@@ -208,12 +192,8 @@ def test_handle_no_instances(mock_instances, mock_commands, mock_artifact,
     mock_commands.return_value = True
     mock_artifact.return_value = True
     mock_failure.return_value = True
-    event = {
-        'CodePipeline.job': {
-            'id': 'abc123'
-        }
-    }
-    assert handle(event, 'Test') is False
+    codepipeline = SampleEvent('codepipeline')
+    assert handle(codepipeline.event, 'Test') is False
 
 @patch('main.codepipeline_success')
 @patch('main.send_run_command')
