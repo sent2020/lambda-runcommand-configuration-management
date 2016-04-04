@@ -95,7 +95,7 @@ EOF
 }
 
 resource "aws_iam_role" "lambda_role" {
-    name = "garlc_lambda_role"
+    name = "garlc_lambda_bootstrap_role"
     assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -119,25 +119,25 @@ output "lambda_role_arn" {
 # Lambda Function
 resource "aws_lambda_function" "lambda_bootstrap_function" {
     filename = "lambda_bootstrap_function_payload.zip"
-    function_name = "lambda_bootstrap"
+    function_name = "garlc_bootstrap"
     role = "${aws_iam_role.lambda_role.arn}"
     handler = "lambda_bootstrap.handle"
-    description = "Continuous Configuration Management"
+    description = "Bootstraps new instances with GARLC"
     memory_size = 128
     runtime = "python2.7"
     timeout = 5
-    source_code_hash = "${base64encode(sha256(file("lambda_function_payload.zip")))}"
+    source_code_hash = "${base64encode(sha256(file("lambda_bootstrap_function_payload.zip")))}"
 }
 
 output "lambda_bootstrap_name" {
   value = "{$aws_lambda_function.lambda_bootstrap_function.function_name}"
-  }
+}
 
-  # CloudWatch Event Rule and Event Target
+# CloudWatch Event Rule and Event Target
 resource "aws_cloudwatch_event_rule" "instance_running" {
   depends_on = ["aws_iam_role.lambda_role"] # we need the Lambda arn to exist
-  name = "lambda_bootstrap"
-  description = "Trigger lambda_bootstrap function when a new instance enters the running state"
+  name = "garlc_bootstrap"
+  description = "Trigger garlc_bootstrap function when a new instance enters the running state"
   event_pattern = <<PATTERN
   {
     "source": [ "aws.ec2" ],
@@ -150,9 +150,9 @@ PATTERN
 }
 
 #allow CW Events to invoke Lambda
-  resource "aws_cloudwatch_event_target" "lambda" {
-    depends_on = ["aws_iam_role.lambda_role"] # we need the Lambda arn to exist
-    rule = "${aws_cloudwatch_event_rule.instance_running.name}"
-    target_id = "lambda_bootstrap"
-    arn = "${aws_lambda_function.lambda_bootstrap_function.arn}"
+resource "aws_cloudwatch_event_target" "lambda" {
+  depends_on = ["aws_iam_role.lambda_role"] # we need the Lambda arn to exist
+  rule = "${aws_cloudwatch_event_rule.instance_running.name}"
+  target_id = "garlc_bootstrap"
+  arn = "${aws_lambda_function.lambda_bootstrap_function.arn}"
 }
