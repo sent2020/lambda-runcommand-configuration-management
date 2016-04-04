@@ -17,6 +17,26 @@ LOGGER.setLevel(logging.INFO)
 # assume we're always using a pipeline name GARLC
 PIPELINE_NAME = 'GARLC'
 
+def is_a_garlc_instance(instance_id):
+    """
+    Determine if an instance is GARLC enabled
+    """
+    filters = [
+        {'Name': 'tag:has_ssm_agent', 'Values': ['true', 'True']}
+    ]
+    try:
+        ec2 = boto3.resource('ec2')
+        instance = ec2.describe_instances(InstanceIds=[str(instance_id)])
+    except ClientError as err:
+        LOGGER.error(str(err))
+        return False
+
+    if instance.filter(Filters=filters):
+        return True
+    else:
+        LOGGER.error(str(instance_id) + " is not a GARLC instance!")
+        return False
+
 def find_bucket():
     """
     find S3 bucket that codedeploy uses and return bucket name
@@ -93,16 +113,29 @@ def get_instance_id(event):
         LOGGER.error(err)
         return False
 
+def resources_exist(instance_id, bucket):
+    """
+    Validates instance_id and bucket have values
+    """
+    if instance_id is False:
+        LOGGER.error('Unable to retrieve Instance ID!')
+        return False
+    elif bucket is False:
+        LOGGER.error('Unable to retrieve Bucket Name!')
+        return False
+    else: return True
+
+
 def handle(event, _context):
-    """Lambda Handler"""
+    """ Lambda Handler """
     log_event(event)
     instance_id = get_instance_id(event)
     bucket = find_bucket()
-    if instance_id is False:
-        LOGGER.error('Unable to retrieve Instance ID!')
-    elif bucket is False:
-        LOGGER.error('Unable to retrieve Bucket Name!')
-    else:
+
+    if resources_exist(instance_id, bucket) and is_a_garlc_instance(instance_id):
         artifact = find_newest_artifact(bucket)
         commands = ssm_commands(artifact)
         send_run_command(instance_id, commands)
+        return True
+    else:
+        return False
