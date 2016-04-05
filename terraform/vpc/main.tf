@@ -11,11 +11,15 @@ output "vpc_id" {
 
 resource "aws_subnet" "garlc_subnet1" {
     vpc_id = "${aws_vpc.garlc_vpc.id}"
-    cidr_block = "10.0.10.0/24"
+    cidr_block = "10.0.0.0/17"
     map_public_ip_on_launch = "True"
     tags {
         Name = "garlc_pub_subnet1"
     }
+}
+resource "aws_route_table_association" "garlc_subnet1_route" {
+    subnet_id = "${aws_subnet.garlc_subnet1.id}"
+    route_table_id = "${aws_route_table.garlc_route.id}"
 }
 output "subnet1" {
   value = "${aws_subnet.garlc_subnet1.id}"
@@ -23,11 +27,15 @@ output "subnet1" {
 
 resource "aws_subnet" "garlc_subnet2" {
     vpc_id = "${aws_vpc.garlc_vpc.id}"
-    cidr_block = "10.0.11.0/24"
+    cidr_block = "10.0.128.0/17"
     map_public_ip_on_launch = "True"
     tags {
         Name = "garlc_pub_subnet2"
     }
+}
+resource "aws_route_table_association" "garlc_subnet2_route" {
+    subnet_id = "${aws_subnet.garlc_subnet2.id}"
+    route_table_id = "${aws_route_table.garlc_route.id}"
 }
 output "subnet2" {
   value = "${aws_subnet.garlc_subnet2.id}"
