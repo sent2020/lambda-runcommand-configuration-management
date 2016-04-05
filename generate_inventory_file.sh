@@ -7,7 +7,7 @@
 source ~/.bash_profile
 
 # Query metadata for our instance id and fetch values of the Roles tag
-tags="$(/opt/aws/bin/ec2-describe-tags --filter \"resource-type=instance\" \
+tags="$(/opt/aws/bin/ec2-describe-tags \
   --filter \"resource-id=$(/opt/aws/bin/ec2-metadata -i | cut -d ' ' -f2)\" \
   --filter \"key=Roles\" | cut -f5)"
 
