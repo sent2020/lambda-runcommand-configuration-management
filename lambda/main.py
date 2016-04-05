@@ -36,6 +36,8 @@ def ssm_commands(artifact):
     utc_datetime = datetime.datetime.utcnow()
     timestamp = utc_datetime.strftime("%Y%m%d%H%M%S")
     return [
+        'export AWS_DEFAULT_REGION=`curl -s http://169.254.169.254/' \
+        "latest/dynamic/instance-identity/document | grep region | awk -F\\\" '{print $4}'`",
         'aws configure set s3.signature_version s3v4',
         'aws s3 cp {0} /tmp/{1}.zip --quiet'.format(artifact, timestamp),
         'unzip -qq /tmp/{0}.zip -d /tmp/{1}'.format(timestamp, timestamp),
