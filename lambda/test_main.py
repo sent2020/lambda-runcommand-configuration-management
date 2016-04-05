@@ -39,6 +39,8 @@ def test_ssm_commands():
     """
     artifact = 'bucket/test/key'
     commands = [
+        'export AWS_DEFAULT_REGION=`curl -s http://169.254.169.254/' \
+        "latest/dynamic/instance-identity/document | grep region | awk -F\\\" '{print $4}'`",
         'aws configure set s3.signature_version s3v4',
         'aws s3 cp bucket/test/key /tmp/20160101000000.zip --quiet',
         'unzip -qq /tmp/20160101000000.zip -d /tmp/20160101000000',
