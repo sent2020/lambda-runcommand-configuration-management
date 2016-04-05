@@ -25,13 +25,13 @@ def is_a_garlc_instance(instance_id):
         {'Name': 'tag:has_ssm_agent', 'Values': ['true', 'True']}
     ]
     try:
-        ec2 = boto3.resource('ec2')
-        instance = ec2.describe_instances(InstanceIds=[str(instance_id)])
+        ec2 = boto3.client('ec2')
+        instance = ec2.describe_instances(InstanceIds=[str(instance_id)], Filters=filters)
     except ClientError as err:
         LOGGER.error(str(err))
         return False
 
-    if instance.filter(Filters=filters):
+    if instance:
         return True
     else:
         LOGGER.error(str(instance_id) + " is not a GARLC instance!")
@@ -44,7 +44,7 @@ def find_bucket():
     try:
         codepipeline = boto3.client('codepipeline')
         pipeline = codepipeline.get_pipeline(name=PIPELINE_NAME)
-        return pipeline['pipeline']['artifactStore']['location']
+        return str(pipeline['pipeline']['artifactStore']['location'])
     except (IOError, ClientError, KeyError) as err:
         LOGGER.error(err)
         return False
@@ -58,8 +58,9 @@ def find_newest_artifact(bucket):
     try:
         aws_s3 = boto3.client('s3')
         objects = aws_s3.list_objects(Bucket=bucket)
-        artifact_list = [i['LastModified'] for i in objects['Contents']]
-        return sorted(artifact_list[-1])
+        artifact_list = [artifact for artifact in objects['Contents']]
+        artifact_list.sort(key=lambda artifact: artifact['LastModified'], reverse=True)
+        return 's3://' + bucket + '/' + str(artifact_list[0]['Key'])
     except (IOError, ClientError, KeyError) as err:
         LOGGER.error(err)
         return False
@@ -68,11 +69,11 @@ def ssm_commands(artifact):
     """
     Builds commands to be sent to SSM (Run Command)
     """
-    # TODO
-    # Error handling in the command generation
     utc_datetime = datetime.datetime.utcnow()
     timestamp = utc_datetime.strftime("%Y%m%d%H%M%S")
     return [
+        'export AWS_DEFAULT_REGION=`curl -s http://169.254.169.254/' \
+        "latest/dynamic/instance-identity/document | grep region | awk -F\\\" '{print $4}'`",
         'aws configure set s3.signature_version s3v4',
         'aws s3 cp {0} /tmp/{1}.zip --quiet'.format(artifact, timestamp),
         'unzip -qq /tmp/{0}.zip -d /tmp/{1}'.format(timestamp, timestamp),
@@ -87,7 +88,7 @@ def send_run_command(instance_id, commands):
     try:
         ssm = boto3.client('ssm')
         ssm.send_command(
-            InstanceId=instance_id,
+            InstanceIds=[instance_id],
             DocumentName='AWS-RunShellScript',
             TimeoutSeconds=300,
             Parameters={
@@ -108,7 +109,7 @@ def log_event(event):
 def get_instance_id(event):
     """ Grab the instance ID out of the "event" dict sent by cloudwatch events """
     try:
-        return event['detail']['EC2InstanceId']
+        return str(event['detail']['instance-id'])
     except KeyError as err:
         LOGGER.error(err)
         return False
@@ -136,6 +137,7 @@ def handle(event, _context):
         artifact = find_newest_artifact(bucket)
         commands = ssm_commands(artifact)
         send_run_command(instance_id, commands)
+        LOGGER.info('===SUCCESS===')
         return True
     else:
         return False
