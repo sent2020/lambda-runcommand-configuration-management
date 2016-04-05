@@ -46,7 +46,7 @@ resource "aws_iam_role_policy" "s3_policy" {
       "s3:GetBucketLocation",
       "s3:ListBucket",
       "s3:GetObject"
-      ]
+      ],
       "Resource": "*"
     }
   ]
@@ -125,7 +125,7 @@ resource "aws_lambda_function" "lambda_bootstrap_function" {
   description = "Bootstraps new instances with GARLC"
   memory_size = 128
   runtime = "python2.7"
-  timeout = 5
+  timeout = 60
   source_code_hash = "${base64encode(sha256(file("lambda_bootstrap_function_payload.zip")))}"
 }
 
@@ -149,7 +149,14 @@ resource "aws_cloudwatch_event_rule" "instance_running" {
 PATTERN
 }
 
-#allow CW Events to invoke Lambda
+resource "aws_lambda_permission" "allow_cloudwatch" {
+    statement_id = "AllowExecutionFromCloudWatch"
+    action = "lambda:InvokeFunction"
+    function_name = "${aws_lambda_function.lambda_bootstrap_function.arn}"
+    principal = "events.amazonaws.com"
+    source_arn = "${aws_cloudwatch_event_rule.instance_running.arn}"
+}
+
 resource "aws_cloudwatch_event_target" "lambda" {
   depends_on = ["aws_iam_role.lambda_role"] # we need the Lambda arn to exist
   rule = "${aws_cloudwatch_event_rule.instance_running.name}"
