@@ -45,7 +45,7 @@ def find_bucket():
         codepipeline = boto3.client('codepipeline')
         pipeline = codepipeline.get_pipeline(name=PIPELINE_NAME)
         return str(pipeline['pipeline']['artifactStore']['location'])
-    except (IOError, ClientError, KeyError) as err:
+    except (ClientError, KeyError, TypeError) as err:
         LOGGER.error(err)
         return False
 
@@ -61,7 +61,7 @@ def find_newest_artifact(bucket):
         artifact_list = [artifact for artifact in objects['Contents']]
         artifact_list.sort(key=lambda artifact: artifact['LastModified'], reverse=True)
         return 's3://' + bucket + '/' + str(artifact_list[0]['Key'])
-    except (IOError, ClientError, KeyError) as err:
+    except (ClientError, KeyError) as err:
         LOGGER.error(err)
         return False
 
