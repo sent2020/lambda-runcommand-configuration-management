@@ -2,9 +2,9 @@
 Unit Tests for trigger_run_command Lambda function
 """
 import pytest
+import boto3
 from botocore.exceptions import ClientError
 from mock import MagicMock, patch
-from main import log_event_and_context
 from main import find_artifact
 from main import ssm_commands
 from main import codepipeline_success
@@ -13,38 +13,20 @@ from main import find_instances
 from main import send_run_command
 from main import handle
 from main import execute_runcommand
-from main import break_instance_ids_into_chunks
+from main import find_instance_ids
 from freezegun import freeze_time
-
-def test_log_event_and_context():
-    """
-    Test the log_event_and_context function
-    """
-    assert log_event_and_context
+from aws_lambda_sample_events import SampleEvent
 
 def test_find_artifact():
     """
-    Test the log_event_and_context function with valid event
+    Test the find_artifact function with valid event
     """
-    event = {
-        'CodePipeline.job': {
-            'data': {
-                'inputArtifacts': [{
-                    'location': {
-                        's3Location': {
-                            'objectKey': 'test/key',
-                            'bucketName': 'bucket'
-                        }
-                    }
-                }]
-            }
-        }
-    }
-    assert find_artifact(event) == 's3://bucket/test/key'
+    codepipeline = SampleEvent('codepipeline')
+    assert find_artifact(codepipeline.event) == 's3://codepipeline-us-east-1-123456789000/pipeline/MyApp/random.zip'
 
 def test_find_artifact_invalid():
     """
-    Test the log_event_and_context function with invalid event
+    Test the find_artifact function with invalid event
     """
     event = {}
     with pytest.raises(KeyError):
@@ -57,6 +39,8 @@ def test_ssm_commands():
     """
     artifact = 'bucket/test/key'
     commands = [
+        'export AWS_DEFAULT_REGION=`curl -s http://169.254.169.254/' \
+        "latest/dynamic/instance-identity/document | grep region | awk -F\\\" '{print $4}'`",
         'aws configure set s3.signature_version s3v4',
         'aws s3 cp bucket/test/key /tmp/20160101000000.zip --quiet',
         'unzip -qq /tmp/20160101000000.zip -d /tmp/20160101000000',
@@ -73,10 +57,10 @@ def test_codepipeline_success(mock_client):
     codepipeline = MagicMock()
     mock_client.return_value = codepipeline
     codepipeline.put_job_success_result.return_value = True
-    assert codepipeline_success(1) == True
+    assert codepipeline_success(1)
 
 @patch('boto3.client')
-def test_codepipeline_success_invalid(mock_client):
+def test_codepipeline_success_with_exception(mock_client):
     """
     Test the codepipeline_success function when a boto exception occurs
     """
@@ -89,7 +73,7 @@ def test_codepipeline_success_invalid(mock_client):
         }
     }
     codepipeline.put_job_success_result.side_effect = ClientError(err_msg, 'Test')
-    assert codepipeline_success(1) == False
+    assert codepipeline_success(1) is False
 
 @patch('boto3.client')
 def test_codepipeline_failure(mock_client):
@@ -99,10 +83,10 @@ def test_codepipeline_failure(mock_client):
     codepipeline = MagicMock()
     mock_client.return_value = codepipeline
     codepipeline.put_job_failure_result.return_value = True
-    assert codepipeline_failure(1, 'blah') == True
+    assert codepipeline_failure(1, 'blah')
 
 @patch('boto3.client')
-def test_codepipeline_failure_invalid(mock_client):
+def test_codepipeline_failure_with_exception(mock_client):
     """
     Test the codepipeline_failure function when a boto exception occurs
     """
@@ -115,26 +99,18 @@ def test_codepipeline_failure_invalid(mock_client):
         }
     }
     codepipeline.put_job_failure_result.side_effect = ClientError(err_msg, 'Test')
-    assert codepipeline_failure(1, 'blah') == False
+    assert codepipeline_failure(1, 'blah') is False
 
-@patch('boto3.client')
-def test_find_instances(mock_client):
+@patch('main.find_instance_ids')
+def test_find_instances(mock_instances):
     """
     Test the find_instances function without errors
     """
-    ec2 = MagicMock()
-    instances = {
-        'Reservations': [{
-            'Instances': [{
-                'InstanceId': 'abcdef-12345'
-            }]
-        }]
-    }
-    mock_client.return_value = ec2
-    ec2.describe_instances.return_value = instances
-    assert find_instances() == ['abcdef-12345']
+    instances = ['abcdef-12345']
+    mock_instances.return_value = instances
+    assert find_instances() == instances
 
-@patch('boto3.client')
+@patch('boto3.resource')
 def test_find_instances_boto_error(mock_client):
     """
     Test the find_instances function when a boto exception occurs
@@ -147,8 +123,19 @@ def test_find_instances_boto_error(mock_client):
         }
     }
     mock_client.return_value = ec2
-    mock_client.describe_instances = ClientError(err_msg, 'Test')
+    ec2.instances.side_effect = ClientError(err_msg, 'Test')
     assert find_instances() == []
+
+@patch('boto3.resources.collection.ResourceCollection.filter')
+def test_find_instance_ids(mock_resource):
+    """
+    Test the find_instance_ids function
+    """
+    instance_id = 'abcdef-12345'
+    instance = [MagicMock(id=instance_id)]
+    boto3.setup_default_session(region_name='us-east-1')
+    mock_resource.return_value = instance
+    assert find_instance_ids('blah') == [instance_id]
 
 @patch('boto3.client')
 def test_send_run_command(mock_client):
@@ -158,7 +145,7 @@ def test_send_run_command(mock_client):
     ssm = MagicMock()
     mock_client.return_value = ssm
     ssm.send_command.return_value = True
-    assert send_run_command(['abcdef-12345'], ['blah']) == True
+    assert send_run_command(['abcdef-12345'], ['blah'])
 
 @patch('boto3.client')
 def test_send_run_command_invalid(mock_client):
@@ -174,53 +161,41 @@ def test_send_run_command_invalid(mock_client):
         }
     }
     ssm.send_command.side_effect = ClientError(err_msg, 'Test')
-    assert send_run_command(['abcdef-12345'], ['blah']) != 'success'
+    assert send_run_command(['abcdef-12345'], ['blah']) is False
 
 @patch('main.codepipeline_success')
 @patch('main.execute_runcommand')
 @patch('main.find_artifact')
 @patch('main.ssm_commands')
 @patch('main.find_instances')
-@patch('main.log_event_and_context')
-def test_handle(mock_log, mock_instances, mock_commands,
-                mock_artifact, mock_run_command, mock_success):
+def test_handle(mock_instances, mock_commands, mock_artifact, mock_run_command,
+                mock_success):
     """
     Test the handle function with valid input and instances
     """
-    mock_log.return_value = True
     mock_instances.return_value = ['abcdef-12345']
     mock_commands.return_value = True
     mock_artifact.return_value = True
     mock_run_command.return_value = True
     mock_success.return_value = True
-    event = {
-        'CodePipeline.job': {
-            'id': 'abc123'
-        }
-    }
-    assert handle(event, 'Test') == True
+    codepipeline = SampleEvent('codepipeline')
+    assert handle(codepipeline.event, 'Test')
 
 @patch('main.codepipeline_failure')
 @patch('main.find_artifact')
 @patch('main.ssm_commands')
 @patch('main.find_instances')
-@patch('main.log_event_and_context')
-def test_handle_no_instances(mock_log, mock_instances, mock_commands,
-                             mock_artifact, mock_failure):
+def test_handle_no_instances(mock_instances, mock_commands, mock_artifact,
+                             mock_failure):
     """
     Test the handle function with valid input and no instances
     """
-    mock_log.return_value = True
     mock_instances.return_value = []
     mock_commands.return_value = True
     mock_artifact.return_value = True
     mock_failure.return_value = True
-    event = {
-        'CodePipeline.job': {
-            'id': 'abc123'
-        }
-    }
-    assert handle(event, 'Test') == False
+    codepipeline = SampleEvent('codepipeline')
+    assert handle(codepipeline.event, 'Test') is False
 
 @patch('main.codepipeline_success')
 @patch('main.send_run_command')
@@ -233,7 +208,7 @@ def test_execute_runcommand(mock_run_command, mock_success):
     chunked_instance_ids = ['abcdef-12345']
     commands = ['blah']
     job_id = 1
-    assert execute_runcommand(chunked_instance_ids, commands, job_id) == True
+    assert execute_runcommand(chunked_instance_ids, commands, job_id)
 
 @patch('main.codepipeline_failure')
 @patch('main.send_run_command')
@@ -246,4 +221,4 @@ def test_execute_runcommand_failed(mock_run_command, mock_failure):
     chunked_instance_ids = ['abcdef-12345']
     commands = ['blah']
     job_id = 1
-    assert execute_runcommand(chunked_instance_ids, commands, job_id) == False
+    assert execute_runcommand(chunked_instance_ids, commands, job_id) is False

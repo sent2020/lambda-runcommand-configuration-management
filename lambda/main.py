@@ -3,7 +3,7 @@ Triggers Run Command on all instances with tag has_ssm_agent set to true.
 Fetches artifact from S3 via CodePipeline, extracts the contents, and finally
 run Ansible locally on the instance to configure itself.
 joshcb@amazon.com
-v1.1.1
+v1.1.0
 """
 from __future__ import print_function
 import datetime
@@ -13,14 +13,6 @@ import boto3
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
-
-def log_event_and_context(event, context):
-    """Logs event information for debugging"""
-    LOGGER.info("====================================================")
-    LOGGER.info(context)
-    LOGGER.info("====================================================")
-    LOGGER.info(event)
-    LOGGER.info("====================================================")
 
 def find_artifact(event):
     """
@@ -44,6 +36,8 @@ def ssm_commands(artifact):
     utc_datetime = datetime.datetime.utcnow()
     timestamp = utc_datetime.strftime("%Y%m%d%H%M%S")
     return [
+        'export AWS_DEFAULT_REGION=`curl -s http://169.254.169.254/' \
+        "latest/dynamic/instance-identity/document | grep region | awk -F\\\" '{print $4}'`",
         'aws configure set s3.signature_version s3v4',
         'aws s3 cp {0} /tmp/{1}.zip --quiet'.format(artifact, timestamp),
         'unzip -qq /tmp/{0}.zip -d /tmp/{1}'.format(timestamp, timestamp),
@@ -90,28 +84,29 @@ def find_instances():
         {'Name': 'instance-state-name', 'Values': ['running']}
     ]
     try:
-        ec2 = boto3.client('ec2')
-        # TODO: add pagination to the below call, MaxResults max is 1000
-        instances = ec2.describe_instances(Filters=filters, MaxResults=1000)
+        instance_ids = find_instance_ids(filters)
+        print(instance_ids)
     except ClientError as err:
         LOGGER.error("Failed to DescribeInstances with EC2!\n%s", err)
 
-    try:
-        for instance in instances['Reservations']:
-            instance_ids.append(instance['Instances'][0]['InstanceId'])
-    except KeyError as err:
-        LOGGER.error("Unable to parse returned instances dict in " \
-            "`find_instances` function!\n%s", err)
-
-    LOGGER.info("Instance IDs: " + str(instance_ids))
     return instance_ids
+
+def find_instance_ids(filters):
+    """
+    EC2 API calls to retrieve instances matched by the filter
+    """
+    ec2 = boto3.resource('ec2')
+    return [i.id for i in ec2.instances.all().filter(Filters=filters)]
 
 def break_instance_ids_into_chunks(instance_ids):
     """
     Returns successive chunks of 50 from instance_ids
     """
     size = 50
-    return [instance_ids[i:i + size] for i in range(0, len(instance_ids), size)]
+    chunks = []
+    for i in range(0, len(instance_ids), size):
+        chunks.append(instance_ids[i:i + size])
+    return chunks
 
 def execute_runcommand(chunked_instance_ids, commands, job_id):
     """
@@ -149,18 +144,14 @@ def send_run_command(instance_ids, commands):
         LOGGER.error("Run Command Failed!\n%s", str(err))
         return False
 
-def handle(event, context):
+def handle(event, _context):
     """
     Lambda main handler
     """
-    log_event_and_context(event, context)
+    LOGGER.info(event)
     try:
         job_id = event['CodePipeline.job']['id']
     except KeyError as err:
-        # TODO
-        # Better handle manual lambda invocations
-        # This will cause a ParamValidationError
-        job_id = 1
         LOGGER.error("Could not retrieve CodePipeline Job ID!\n%s", err)
 
     instance_ids = find_instances()
