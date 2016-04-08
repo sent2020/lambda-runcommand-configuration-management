@@ -13,7 +13,7 @@ from botocore.exceptions import ClientError
 import boto3
 
 LOGGER = logging.getLogger()
-LOGGER.setLevel(logging.INFO)
+LOGGER.setLevel(logging.DEBUG)
 
 def find_artifact(event):
     """
@@ -139,16 +139,17 @@ def send_run_command(instance_ids, commands):
         ssm.send_command(
             InstanceIds=instance_ids,
             DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=600,
+            TimeoutSeconds=10, # Seconds to connect to a host
             Parameters={
                 'commands': commands,
-                'executionTimeout': ['600']
+                'executionTimeout': ['600'] # Seconds all commands have to complete in
             }
         )
+        LOGGER.debug('============RunCommand sent successfully')
         return True
     except ClientError as err:
         if 'ThrottlingException' in str(err):
-            LOGGER.info("RunCommand throttled, automatically retrying in 3 seconds.")
+            LOGGER.debug("RunCommand throttled, automatically retrying in 3 seconds.")
             time.sleep(3)
             send_run_command(instance_ids, commands)
         else:
