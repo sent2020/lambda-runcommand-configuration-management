@@ -5,10 +5,10 @@ resource "aws_autoscaling_group" "asg" {
   max_size = "${var.max_size}"
   min_size = "${var.min_size}"
   desired_capacity = "${var.desired_capacity}"
-  vpc_zone_identifier = ["${var.subnets}"]
+  vpc_zone_identifier = ["${var.subnet1}", "${var.subnet2}"]
   tag {
-    key = "Roles"
-    value = "${var.roles}"
+    key = "Ansible_Roles"
+    value = "${var.ansible_roles}"
     propagate_at_launch = true
   }
   tag {

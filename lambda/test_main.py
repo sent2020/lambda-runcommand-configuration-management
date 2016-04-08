@@ -152,15 +152,13 @@ def test_send_run_command_invalid(mock_client):
     """
     Test the send_run_command function when a boto exception occurs
     """
-    ssm = MagicMock()
-    mock_client.return_value = ssm
     err_msg = {
         'Error': {
             'Code': 400,
             'Message': 'Boom!'
         }
     }
-    ssm.send_command.side_effect = ClientError(err_msg, 'Test')
+    mock_client.side_effect = ClientError(err_msg, 'Test')
     assert send_run_command(['abcdef-12345'], ['blah']) is False
 
 @patch('main.codepipeline_success')

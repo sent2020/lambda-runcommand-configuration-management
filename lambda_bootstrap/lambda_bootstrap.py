@@ -4,7 +4,7 @@ new intance launch. We get the instance ID from the event message, find our pipe
 bucket, the latest artifact in the bucket, tell the new instance to grab the
 artifact, and finally execute it locally via runcommand.
 chavisb@amazon.com
-v0.0.1
+v1.0.0
 """
 import datetime
 import logging
@@ -45,7 +45,7 @@ def find_bucket():
         codepipeline = boto3.client('codepipeline')
         pipeline = codepipeline.get_pipeline(name=PIPELINE_NAME)
         return str(pipeline['pipeline']['artifactStore']['location'])
-    except (IOError, ClientError, KeyError) as err:
+    except (ClientError, KeyError, TypeError) as err:
         LOGGER.error(err)
         return False
 
@@ -61,7 +61,7 @@ def find_newest_artifact(bucket):
         artifact_list = [artifact for artifact in objects['Contents']]
         artifact_list.sort(key=lambda artifact: artifact['LastModified'], reverse=True)
         return 's3://' + bucket + '/' + str(artifact_list[0]['Key'])
-    except (IOError, ClientError, KeyError) as err:
+    except (ClientError, KeyError) as err:
         LOGGER.error(err)
         return False
 
@@ -90,10 +90,10 @@ def send_run_command(instance_id, commands):
         ssm.send_command(
             InstanceIds=[instance_id],
             DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=300,
+            TimeoutSeconds=600,
             Parameters={
                 'commands': commands,
-                'executionTimeout': ['120']
+                'executionTimeout': ['600']
             }
         )
         return 'success'

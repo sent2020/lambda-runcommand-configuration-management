@@ -16,6 +16,7 @@ module "lambda_bootstrap" {
 
 module "vpc" {
   source = "./vpc"
+  region = "${var.region}"
 }
 
 module "launch_configuration" {
@@ -33,8 +34,9 @@ module "webserver_asg" {
   min_size = 2
   desired_capacity = 2
   asg_name = "garlc_webservers"
-  roles = "webserver,appserver"
-  subnets = "${module.vpc.subnet1}, ${module.vpc.subnet2}"
+  ansible_roles = "webserver,appserver"
+  subnet1 = "${module.vpc.subnet1}"
+  subnet2 = "${module.vpc.subnet2}"
 }
 
 module "database_asg" {
@@ -44,6 +46,7 @@ module "database_asg" {
   min_size = 1
   desired_capacity = 1
   asg_name = "garlc_databases"
-  roles = "dbserver"
-  subnets = "${module.vpc.subnet1}, ${module.vpc.subnet2}"
+  ansible_roles = "dbserver"
+  subnet1 = "${module.vpc.subnet1}"
+  subnet2 = "${module.vpc.subnet2}"
 }
