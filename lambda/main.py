@@ -129,6 +129,8 @@ def send_run_command(instance_ids, commands):
     """
     Sends the Run Command API Call
     """
+    LOGGER.info('==========Instances in this chunk:')
+    LOGGER.info(instance_ids)
     try:
         ssm = boto3.client('ssm')
     except ClientError as err:
@@ -139,7 +141,7 @@ def send_run_command(instance_ids, commands):
         ssm.send_command(
             InstanceIds=instance_ids,
             DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=30, # Seconds to connect to a host, 30 is the min allowed
+            TimeoutSeconds=120, # Seconds to connect to a host, 30 is the min allowed
             Parameters={
                 'commands': commands,
                 'executionTimeout': ['600'] # Seconds all commands have to complete in
@@ -149,7 +151,7 @@ def send_run_command(instance_ids, commands):
         return True
     except ClientError as err:
         if 'ThrottlingException' in str(err):
-            LOGGER.info("RunCommand throttled, automatically retrying in 3 seconds.")
+            LOGGER.info("RunCommand throttled, automatically retrying...")
             time.sleep(1)
             send_run_command(instance_ids, commands)
         else:
