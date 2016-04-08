@@ -101,9 +101,9 @@ def find_instance_ids(filters):
 
 def break_instance_ids_into_chunks(instance_ids):
     """
-    Returns successive chunks of 50 from instance_ids
+    Returns successive chunks of 25 from instance_ids
     """
-    size = 50
+    size = 25
     chunks = []
     for i in range(0, len(instance_ids), size):
         chunks.append(instance_ids[i:i + size])
@@ -139,7 +139,7 @@ def send_run_command(instance_ids, commands):
         ssm.send_command(
             InstanceIds=instance_ids,
             DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=10, # Seconds to connect to a host
+            TimeoutSeconds=30, # Seconds to connect to a host, 30 is the min allowed
             Parameters={
                 'commands': commands,
                 'executionTimeout': ['600'] # Seconds all commands have to complete in
@@ -150,7 +150,7 @@ def send_run_command(instance_ids, commands):
     except ClientError as err:
         if 'ThrottlingException' in str(err):
             LOGGER.info("RunCommand throttled, automatically retrying in 3 seconds.")
-            time.sleep(3)
+            time.sleep(1)
             send_run_command(instance_ids, commands)
         else:
             LOGGER.error("Run Command Failed!\n%s", str(err))
