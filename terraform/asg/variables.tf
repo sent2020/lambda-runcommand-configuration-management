@@ -10,4 +10,5 @@ variable "desired_capacity" {
 variable "lcid" {}
 variable "asg_name" {}
 variable "ansible_roles" {}
-variable "subnets" {}
+variable "subnet1" {}
+variable "subnet2" {}
