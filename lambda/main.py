@@ -130,6 +130,11 @@ def send_run_command(instance_ids, commands):
     """
     try:
         ssm = boto3.client('ssm')
+    except ClientError as err:
+        LOGGER.error("Run Command Failed!\n%s", str(err))
+        return False
+
+    try:
         ssm.send_command(
             InstanceIds=instance_ids,
             DocumentName='AWS-RunShellScript',
@@ -141,8 +146,7 @@ def send_run_command(instance_ids, commands):
         )
         return True
     except ClientError as err:
-        LOGGER.error("Run Command Failed!\n%s", str(err))
-        return False
+        LOGGER.info("RunCommand throttled, boto3 will automatically retry...")
 
 def handle(event, _context):
     """
