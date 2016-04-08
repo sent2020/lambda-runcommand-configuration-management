@@ -100,8 +100,8 @@ resource "aws_lambda_function" "lambda_function" {
     role = "${aws_iam_role.lambda_role.arn}"
     handler = "main.handle"
     description = "Continuous Configuration Management"
-    memory_size = 128
+    memory_size = 256
     runtime = "python2.7"
-    timeout = 60
+    timeout = 300
     source_code_hash = "${base64sha256(file("payload.zip"))}"
 }
