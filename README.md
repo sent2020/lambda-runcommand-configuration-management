@@ -33,5 +33,5 @@ CodePipeline
 
 # Notes
 * Instances need a tag of "has_ssm_agent" with a value of "true" or "True".
-* Instances must have a "Roles" tag (case sensitive) with a list of role names as a comma separated list.
+* Instances must have a "Ansible_Roles" tag (case sensitive) with a list of role names as a comma separated list.
   * These roles should correspond to Ansible roles in the playbook to be useful.

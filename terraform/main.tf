@@ -33,7 +33,7 @@ module "webserver_asg" {
   min_size = 2
   desired_capacity = 2
   asg_name = "garlc_webservers"
-  roles = "webserver,appserver"
+  ansible_roles = "webserver,appserver"
   subnets = "${module.vpc.subnet1}, ${module.vpc.subnet2}"
 }
 
@@ -44,6 +44,6 @@ module "database_asg" {
   min_size = 1
   desired_capacity = 1
   asg_name = "garlc_databases"
-  roles = "dbserver"
+  ansible_roles = "dbserver"
   subnets = "${module.vpc.subnet1}, ${module.vpc.subnet2}"
 }
