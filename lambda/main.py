@@ -6,6 +6,7 @@ joshcb@amazon.com
 v1.1.0
 """
 from __future__ import print_function
+import time
 import datetime
 import logging
 from botocore.exceptions import ClientError
@@ -147,7 +148,8 @@ def send_run_command(instance_ids, commands):
         return True
     except ClientError as err:
         if 'ThrottlingException' in str(err):
-            LOGGER.debug("RunCommand throttled, automatically retrying...")
+            LOGGER.info("RunCommand throttled, automatically retrying in 3 seconds.")
+            time.sleep(3)
             send_run_command(instance_ids, commands)
         else:
             LOGGER.error("Run Command Failed!\n%s", str(err))
