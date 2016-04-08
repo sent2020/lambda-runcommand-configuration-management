@@ -6,6 +6,7 @@ from lambda_bootstrap import find_bucket
 from aws_lambda_sample_events import SampleEvent
 from botocore.exceptions import ClientError
 from lambda_bootstrap import is_a_garlc_instance
+from lambda_bootstrap import find_newest_artifact
 
 @patch('boto3.client')
 def test_find_bucket(mock_client):
@@ -56,7 +57,7 @@ def test_find_bucket_with_clienterror(mock_client):
         }
     }
     mock_client.side_effect = ClientError(err_msg, 'blah')
-    assert find_bucket() == False
+    assert find_bucket() is False
 
 @patch('boto3.client')
 def test_is_a_garlc_instance(mock_client):
@@ -67,4 +68,26 @@ def test_is_a_garlc_instance(mock_client):
     ec2 = MagicMock()
     mock_client.return_value = ec2
     ec2.describe_instances.return_value = "instance"
-    assert is_a_garlc_instance("instance") == True
+    assert is_a_garlc_instance("instance") is True
+
+@patch('boto3.client')
+def test_is_a_garlc_instance_with_clienterror(mock_client):
+    """
+    Test is_a_garlc_instance with ClientError
+    """
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Sad Code'
+        }
+    }
+    mock_client.side_effect = ClientError(err_msg, 'sad response')
+    assert is_a_garlc_instance('foo') is False
+
+@patch('boto3.client')
+def test_find_newest_artifact(mock_client):
+    """
+    test find_newest_artifact returns a properly formatted string
+    """
+    aws_s3 = MagicMock()
+    mock_client.return_value = aws_s3
