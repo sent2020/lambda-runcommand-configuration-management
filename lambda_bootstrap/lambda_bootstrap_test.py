@@ -89,5 +89,46 @@ def test_find_newest_artifact(mock_client):
     """
     test find_newest_artifact returns a properly formatted string
     """
+    bucket_objects = {
+        "Contents": [
+            {
+                "Key": "blah",
+                "LastModified": "datetime.datetime(2016, 3, 18, 19, 20, 29, tzinfo=tzutc())"
+            }
+        ]
+    }
     aws_s3 = MagicMock()
     mock_client.return_value = aws_s3
+    aws_s3.list_objects.return_value = bucket_objects
+    assert find_newest_artifact('blah') == 's3://blah/blah'
+
+@patch('boto3.client')
+def test_find_newest_artifact_with_keyerror(mock_client):
+    """
+    test find_newest_artifact returns false with a KeyError
+    """
+    bucket_objects = {
+        "Contents": [
+            {
+                "LastModified": "datetime.datetime(2016, 3, 18, 19, 20, 29, tzinfo=tzutc())"
+            }
+        ]
+    }
+    aws_s3 = MagicMock()
+    mock_client.return_value = aws_s3
+    aws_s3.list_objects.return_value = bucket_objects
+    assert find_newest_artifact('blah') == False
+
+@patch('boto3.client')
+def test_find_newest_artifact_with_clienterror(mock_client):
+    """
+    test find_newest_artifact returns false with a ClientError
+    """
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Boom!'
+        }
+    }
+    mock_client.side_effect = ClientError(err_msg, 'blah')
+    assert find_newest_artifact('blah') == False
