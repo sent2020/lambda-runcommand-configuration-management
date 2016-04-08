@@ -10,9 +10,9 @@ source ~/.bash_profile
 region=`curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | awk -F\" '{print $4}'`
 instance_id=`/opt/aws/bin/ec2-metadata -i | cut -d ' ' -f2`
 
-# Query metadata for our instance id and fetch values of the Roles tag
+# Query metadata for our instance id and fetch values of the Ansible_Roles tag
 tags="$(/opt/aws/bin/ec2-describe-tags --region $region --filter \"resource-type=instance\" \
-  --filter \"resource-id=$instance_id\" --filter \"key=Roles\" | cut -f5)"
+  --filter \"resource-id=$instance_id\" --filter \"key=Ansible_Roles\" | cut -f5)"
 
 # Whitespace get outta here we don't need you
 tags_no_whitespace="$(echo -e "${tags}" | tr -d '[[:space:]]')"
