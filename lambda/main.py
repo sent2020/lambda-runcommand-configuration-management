@@ -13,7 +13,7 @@ from botocore.exceptions import ClientError
 import boto3
 
 LOGGER = logging.getLogger()
-LOGGER.setLevel(logging.DEBUG)
+LOGGER.setLevel(logging.INFO)
 
 def find_artifact(event):
     """
@@ -145,11 +145,11 @@ def send_run_command(instance_ids, commands):
                 'executionTimeout': ['600'] # Seconds all commands have to complete in
             }
         )
-        LOGGER.debug('============RunCommand sent successfully')
+        LOGGER.info('============RunCommand sent successfully')
         return True
     except ClientError as err:
         if 'ThrottlingException' in str(err):
-            LOGGER.debug("RunCommand throttled, automatically retrying in 3 seconds.")
+            LOGGER.info("RunCommand throttled, automatically retrying in 3 seconds.")
             time.sleep(3)
             send_run_command(instance_ids, commands)
         else:
