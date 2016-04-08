@@ -146,7 +146,12 @@ def send_run_command(instance_ids, commands):
         )
         return True
     except ClientError as err:
-        LOGGER.info("RunCommand throttled, boto3 will automatically retry...")
+        if 'ThrottlingException' in str(err):
+            LOGGER.debug("RunCommand throttled, automatically retrying...")
+            send_run_command(instance_ids, commands)
+        else:
+            LOGGER.error("Run Command Failed!\n%s", str(err))
+            return False
 
 def handle(event, _context):
     """
