@@ -11,6 +11,7 @@ output "vpc_id" {
 
 resource "aws_subnet" "garlc_subnet1" {
     vpc_id = "${aws_vpc.garlc_vpc.id}"
+    availability_zone = "${var.region}a"
     cidr_block = "10.0.0.0/17"
     map_public_ip_on_launch = "True"
     tags {
@@ -27,6 +28,7 @@ output "subnet1" {
 
 resource "aws_subnet" "garlc_subnet2" {
     vpc_id = "${aws_vpc.garlc_vpc.id}"
+    availability_zone = "${var.region}b"
     cidr_block = "10.0.128.0/17"
     map_public_ip_on_launch = "True"
     tags {
