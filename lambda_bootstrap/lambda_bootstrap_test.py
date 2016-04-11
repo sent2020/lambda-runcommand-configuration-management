@@ -9,6 +9,7 @@ from lambda_bootstrap import is_a_garlc_instance
 from lambda_bootstrap import find_newest_artifact
 from lambda_bootstrap import get_instance_id
 from lambda_bootstrap import resources_exist
+from lambda_bootstrap import send_run_command
 
 @patch('boto3.client')
 def test_find_bucket(mock_client):
@@ -155,3 +156,13 @@ def test_resources_exist(mock_event):
     instance_id = "i-12345678"
     bucket = "buckette"
     assert resources_exist(instance_id, bucket) is True
+
+@patch('boto3.client')
+def test_send_run_command(mock_client):
+    """
+    Test the send_run_command function without errors
+    """
+    ssm = MagicMock()
+    mock_client.return_value = ssm
+    ssm.send_command.return_value = True
+    assert send_run_command(['i-12345678'], ['blah'])
