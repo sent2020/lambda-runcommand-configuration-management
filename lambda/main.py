@@ -6,6 +6,7 @@ joshcb@amazon.com
 v1.1.0
 """
 from __future__ import print_function
+import time
 import datetime
 import logging
 from botocore.exceptions import ClientError
@@ -100,9 +101,9 @@ def find_instance_ids(filters):
 
 def break_instance_ids_into_chunks(instance_ids):
     """
-    Returns successive chunks of 50 from instance_ids
+    Returns successive chunks from instance_ids
     """
-    size = 50
+    size = 3
     chunks = []
     for i in range(0, len(instance_ids), size):
         chunks.append(instance_ids[i:i + size])
@@ -128,6 +129,8 @@ def send_run_command(instance_ids, commands):
     """
     Sends the Run Command API Call
     """
+    LOGGER.info('==========Instances in this chunk:')
+    LOGGER.info(instance_ids)
     try:
         ssm = boto3.client('ssm')
     except ClientError as err:
@@ -138,15 +141,22 @@ def send_run_command(instance_ids, commands):
         ssm.send_command(
             InstanceIds=instance_ids,
             DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=600,
+            TimeoutSeconds=120, # Seconds to connect to a host, 30 is the min allowed
             Parameters={
                 'commands': commands,
-                'executionTimeout': ['600']
+                'executionTimeout': ['600'] # Seconds all commands have to complete in
             }
         )
+        LOGGER.info('============RunCommand sent successfully')
         return True
     except ClientError as err:
-        LOGGER.info("RunCommand throttled, boto3 will automatically retry...")
+        if 'ThrottlingException' in str(err):
+            LOGGER.info("RunCommand throttled, automatically retrying...")
+            time.sleep(1)
+            send_run_command(instance_ids, commands)
+        else:
+            LOGGER.error("Run Command Failed!\n%s", str(err))
+            return False
 
 def handle(event, _context):
     """
