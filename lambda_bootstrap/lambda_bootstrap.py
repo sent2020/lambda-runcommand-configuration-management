@@ -87,18 +87,28 @@ def send_run_command(instance_id, commands):
     """
     try:
         ssm = boto3.client('ssm')
+    except ClientError as err:
+        LOGGER.error("Run Command Failed!\n%s", str(err))
+        return False
+
+    try:
         ssm.send_command(
             InstanceIds=[instance_id],
             DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=600, # Seconds to connect to a host
+            TimeoutSeconds=600,
             Parameters={
                 'commands': commands,
                 'executionTimeout': ['600'] # Seconds all commands have to complete in
             }
         )
-        return 'success'
+        return True
     except ClientError as err:
-        return err
+        if 'ThrottlingException' in str(err):
+            LOGGER.info("RunCommand throttled, automatically retrying...")
+            send_run_command(instance_id, commands)
+        else:
+            LOGGER.error("Run Command Failed!\n%s", str(err))
+            return False
 
 def log_event(event):
     """Logs event information for debugging"""
