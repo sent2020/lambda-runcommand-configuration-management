@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 from lambda_bootstrap import is_a_garlc_instance
 from lambda_bootstrap import find_newest_artifact
 from lambda_bootstrap import get_instance_id
+from lambda_bootstrap import resources_exist
 
 @patch('boto3.client')
 def test_find_bucket(mock_client):
@@ -118,7 +119,7 @@ def test_find_newest_artifact_with_keyerror(mock_client):
     aws_s3 = MagicMock()
     mock_client.return_value = aws_s3
     aws_s3.list_objects.return_value = bucket_objects
-    assert find_newest_artifact('blah') == False
+    assert find_newest_artifact('blah') is False
 
 @patch('boto3.client')
 def test_find_newest_artifact_with_clienterror(mock_client):
@@ -132,7 +133,7 @@ def test_find_newest_artifact_with_clienterror(mock_client):
         }
     }
     mock_client.side_effect = ClientError(err_msg, 'blah')
-    assert find_newest_artifact('blah') == False
+    assert find_newest_artifact('blah') is False
 
 @patch('boto3.client')
 def test_get_instance_id(mock_event):
@@ -145,3 +146,12 @@ def test_get_instance_id(mock_event):
         }
     }
     assert get_instance_id(mock_event) == mock_event['detail']['instance-id']
+
+@patch('boto3.client')
+def test_resources_exist(mock_event):
+    """
+    tests resources_exist function returns false when either arg is null
+    """
+    instance_id = "i-12345678"
+    bucket = "buckette"
+    assert resources_exist(instance_id, bucket) is True

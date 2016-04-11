@@ -118,10 +118,10 @@ def resources_exist(instance_id, bucket):
     """
     Validates instance_id and bucket have values
     """
-    if instance_id is False:
+    if instance_id is None:
         LOGGER.error('Unable to retrieve Instance ID!')
         return False
-    elif bucket is False:
+    elif bucket is None:
         LOGGER.error('Unable to retrieve Bucket Name!')
         return False
     else: return True
