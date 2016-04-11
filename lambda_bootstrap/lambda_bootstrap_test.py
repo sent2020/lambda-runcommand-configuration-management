@@ -7,6 +7,7 @@ from aws_lambda_sample_events import SampleEvent
 from botocore.exceptions import ClientError
 from lambda_bootstrap import is_a_garlc_instance
 from lambda_bootstrap import find_newest_artifact
+from lambda_bootstrap import get_instance_id
 
 @patch('boto3.client')
 def test_find_bucket(mock_client):
@@ -132,3 +133,15 @@ def test_find_newest_artifact_with_clienterror(mock_client):
     }
     mock_client.side_effect = ClientError(err_msg, 'blah')
     assert find_newest_artifact('blah') == False
+
+@patch('boto3.client')
+def test_get_instance_id(mock_event):
+    """
+    test get instance id returns instance id string
+    """
+    mock_event = {
+        'detail': {
+            'instance-id': 'i-12345678'
+        }
+    }
+    assert get_instance_id(mock_event) == mock_event['detail']['instance-id']
