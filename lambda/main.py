@@ -1,7 +1,8 @@
 """
-Triggers Run Command on all instances with tag has_ssm_agent set to true.
+Triggers RunCommand on all instances with tag has_ssm_agent set to true.
 Fetches artifact from S3 via CodePipeline, extracts the contents, and finally
-run Ansible locally on the instance to configure itself.
+runs Ansible locally on the instance to configure itself.  Uses
+runcommand_helper.py to actually execute RunCommand.
 joshcb@amazon.com
 v1.1.0
 """
@@ -10,7 +11,6 @@ import datetime
 import logging
 from botocore.exceptions import ClientError
 import boto3
-import concurrent.futures
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
@@ -103,7 +103,7 @@ def break_instance_ids_into_chunks(instance_ids):
     """
     Returns successive chunks from instance_ids
     """
-    size = 3
+    size = 250
     chunks = []
     for i in range(0, len(instance_ids), size):
         chunks.append(instance_ids[i:i + size])
@@ -111,56 +111,29 @@ def break_instance_ids_into_chunks(instance_ids):
 
 def execute_runcommand(chunked_instance_ids, commands, job_id):
     """
-    Execute RunCommand for each chunk of instances
+    Handoff RunCommand to the RunCommand Helper AWS Lambda function
     """
-    success = True
-    executor = concurrent.futures.ThreadPoolExecutor(2)
-    futures = [executor.submit(send_run_command, chunk, commands)
-               for chunk in chunked_instance_ids]
+    try:
+        client = boto3.client('lambda')
+    except ClientError as err:
+        LOGGER.error("Failed to created a Lambda client!\n%s", err)
+        codepipeline_failure(job_id, err)
+        return False
 
-    concurrent.futures.wait(futures)
+    response = client.invoke_async(
+        FunctionName='garlc_runcommand_helper',
+        InvokeArgs={
+            "ChunkedInstanceIds": chunked_instance_ids,
+            "Commands": commands
+        }
+    )
 
-    for future in futures:
-        if future.result() == False: success = False
-
-    if success:
+    if response['Status'] is 202:
         codepipeline_success(job_id)
         return True
     else:
-        codepipeline_failure(job_id, 'Not all RunCommand calls completed, see log.')
+        codepipeline_failure(job_id, response)
         return False
-
-def send_run_command(instance_ids, commands):
-    """
-    Sends the Run Command API Call
-    """
-    LOGGER.info('==========Instances in this chunk:')
-    LOGGER.info(instance_ids)
-    try:
-        ssm = boto3.client('ssm')
-    except ClientError as err:
-        LOGGER.error("Run Command Failed!\n%s", str(err))
-        return False
-
-    try:
-        ssm.send_command(
-            InstanceIds=instance_ids,
-            DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=120, # Seconds to connect to a host, 30 is the min allowed
-            Parameters={
-                'commands': commands,
-                'executionTimeout': ['600'] # Seconds all commands have to complete in
-            }
-        )
-        LOGGER.info('============RunCommand sent successfully')
-        return True
-    except ClientError as err:
-        if 'ThrottlingException' in str(err):
-            LOGGER.info("RunCommand throttled, automatically retrying...")
-            send_run_command(instance_ids, commands)
-        else:
-            LOGGER.error("Run Command Failed!\n%s", str(err))
-            return False
 
 def handle(event, _context):
     """
