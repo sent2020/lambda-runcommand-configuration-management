@@ -144,6 +144,7 @@ def handle(event, _context):
         job_id = event['CodePipeline.job']['id']
     except KeyError as err:
         LOGGER.error("Could not retrieve CodePipeline Job ID!\n%s", err)
+        return False
 
     instance_ids = find_instances()
     commands = ssm_commands(find_artifact(event))
