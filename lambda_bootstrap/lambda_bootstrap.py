@@ -120,7 +120,7 @@ def get_instance_id(event):
     """ Grab the instance ID out of the "event" dict sent by cloudwatch events """
     try:
         return str(event['detail']['instance-id'])
-    except KeyError as err:
+    except (TypeError, KeyError) as err:
         LOGGER.error(err)
         return False
 
@@ -128,10 +128,10 @@ def resources_exist(instance_id, bucket):
     """
     Validates instance_id and bucket have values
     """
-    if instance_id is False:
+    if not instance_id:
         LOGGER.error('Unable to retrieve Instance ID!')
         return False
-    elif bucket is False:
+    elif not bucket:
         LOGGER.error('Unable to retrieve Bucket Name!')
         return False
     else: return True
