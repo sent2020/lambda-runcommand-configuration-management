@@ -125,7 +125,7 @@ resource "aws_lambda_function" "lambda_bootstrap_function" {
   description = "Bootstraps new instances with GARLC"
   memory_size = 128
   runtime = "python2.7"
-  timeout = 60
+  timeout = 300
   source_code_hash = "${base64sha256(file("lambda_bootstrap_function_payload.zip"))}"
 }
 
