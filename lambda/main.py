@@ -10,6 +10,7 @@ import datetime
 import logging
 from botocore.exceptions import ClientError
 import boto3
+import concurrent.futures
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
@@ -113,9 +114,14 @@ def execute_runcommand(chunked_instance_ids, commands, job_id):
     Execute RunCommand for each chunk of instances
     """
     success = True
-    for chunk in chunked_instance_ids:
-        if send_run_command(chunk, commands) is False:
-            success = False # continue iterating but make sure we fail the pipeline
+    executor = concurrent.futures.ThreadPoolExecutor(2)
+    futures = [executor.submit(send_run_command, chunk, commands)
+               for chunk in chunked_instance_ids]
+
+    concurrent.futures.wait(futures)
+
+    for future in futures:
+        if future.result() == False: success = False
 
     if success:
         codepipeline_success(job_id)
