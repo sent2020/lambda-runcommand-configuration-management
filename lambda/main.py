@@ -7,6 +7,7 @@ joshcb@amazon.com
 v1.1.0
 """
 from __future__ import print_function
+import json
 import datetime
 import logging
 from botocore.exceptions import ClientError
@@ -120,12 +121,13 @@ def execute_runcommand(chunked_instance_ids, commands, job_id):
         codepipeline_failure(job_id, err)
         return False
 
+    event = {
+        "ChunkedInstanceIds": chunked_instance_ids,
+        "Commands": commands
+    }
     response = client.invoke_async(
         FunctionName='garlc_runcommand_helper',
-        InvokeArgs={
-            "ChunkedInstanceIds": chunked_instance_ids,
-            "Commands": commands
-        }
+        InvokeArgs=json.dumps(event)
     )
 
     if response['Status'] is 202:
