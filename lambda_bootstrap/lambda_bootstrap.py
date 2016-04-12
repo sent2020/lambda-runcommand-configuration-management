@@ -96,9 +96,10 @@ def send_run_command(instance_id, commands):
                 'executionTimeout': ['600']
             }
         )
-        return 'success'
+        return True
     except ClientError as err:
-        return err
+        LOGGER.error("Run Command Failed!\n%s", str(err))
+        return False
 
 def log_event(event):
     """Logs event information for debugging"""
@@ -110,7 +111,7 @@ def get_instance_id(event):
     """ Grab the instance ID out of the "event" dict sent by cloudwatch events """
     try:
         return str(event['detail']['instance-id'])
-    except KeyError as err:
+    except (TypeError, KeyError) as err:
         LOGGER.error(err)
         return False
 
@@ -118,10 +119,10 @@ def resources_exist(instance_id, bucket):
     """
     Validates instance_id and bucket have values
     """
-    if instance_id is False:
+    if not instance_id:
         LOGGER.error('Unable to retrieve Instance ID!')
         return False
-    elif bucket is False:
+    elif not bucket:
         LOGGER.error('Unable to retrieve Bucket Name!')
         return False
     else: return True
