@@ -32,7 +32,7 @@ EOF
 }
 
 # Add an SSM Policy
-resource "aws_iam_role_policy" "ssm_policy" {
+resource "aws_iam_role_policy" "runcommand_helper_ssm_policy" {
     name = "ssm_policy"
     role = "${aws_iam_role.runcommand_helper_lambda_role.id}"
     policy = <<EOF
@@ -44,6 +44,25 @@ resource "aws_iam_role_policy" "ssm_policy" {
       "Action": [
         "ssm:*",
         "ec2:Describe*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "runcommand_helper_lambda_policy" {
+    name = "lambda_policy"
+    role = "${aws_iam_role.runcommand_helper_lambda_role.id}"
+    policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction"
       ],
       "Resource": "*"
     }
