@@ -6,6 +6,7 @@ joshcb@amazon.com
 v1.0.0
 """
 from __future__ import print_function
+import json
 import logging
 from botocore.exceptions import ClientError
 import boto3
@@ -60,12 +61,13 @@ def invoke_lambda(chunks, commands):
             LOGGER.error("Failed to created a Lambda client!\n%s", err)
             invoke_lambda(chunks, commands)
 
+        event = {
+            "ChunkedInstanceIds": chunks,
+            "Commands": commands
+        }
         response = client.invoke_async(
             FunctionName='garlc_runcommand_helper',
-            InvokeArgs={
-                "ChunkedInstanceIds": chunks,
-                "Commands": commands
-            }
+            InvokeArgs=json.dumps(event)
         )
 
         if response['Status'] is 202:
