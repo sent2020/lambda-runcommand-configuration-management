@@ -51,6 +51,7 @@ def invoke_lambda(chunks, commands):
     """
     if len(chunks) == 0:
         LOGGER.info('No more chunks of instances to process')
+        return True
     else:
         try:
             client = boto3.client('lambda')
@@ -93,3 +94,4 @@ def handle(event, _context):
     instance_ids = chunked_instance_ids.pop(0)
     send_run_command(instance_ids, commands)
     invoke_lambda(chunked_instance_ids, commands)
+    return True
