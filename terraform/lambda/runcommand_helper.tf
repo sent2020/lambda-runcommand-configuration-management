@@ -10,9 +10,9 @@
 # License for the specific language governing permissions and limitations under the License.
 
 # Add Lambda basic policy for logging
-resource "aws_iam_role_policy" "logging_policy" {
+resource "aws_iam_role_policy" "runcommand_helper_logging_policy" {
     name = "logging_policy"
-    role = "${aws_iam_role.lambda_role.id}"
+    role = "${aws_iam_role.runcommand_helper_lambda_role.id}"
     policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -31,29 +31,10 @@ resource "aws_iam_role_policy" "logging_policy" {
 EOF
 }
 
-# Add CodePipeline custom action policy
-# CodePipeline currently requires codepipeline:* to get and put properly :(
-resource "aws_iam_role_policy" "codepipeline_policy" {
-    name = "codepipeline_policy"
-    role = "${aws_iam_role.lambda_role.id}"
-    policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "codepipeline:*",
-      "Resource": "*"
-    }
-  ]
-}
-EOF
-}
-
 # Add an SSM Policy
 resource "aws_iam_role_policy" "ssm_policy" {
     name = "ssm_policy"
-    role = "${aws_iam_role.lambda_role.id}"
+    role = "${aws_iam_role.runcommand_helper_lambda_role.id}"
     policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -71,7 +52,7 @@ resource "aws_iam_role_policy" "ssm_policy" {
 EOF
 }
 
-resource "aws_iam_role" "lambda_role" {
+resource "aws_iam_role" "runcommand_helper_lambda_role" {
     name = "garlc_runcommand_helper_lambda_role"
     assume_role_policy = <<EOF
 {
@@ -89,15 +70,15 @@ resource "aws_iam_role" "lambda_role" {
 }
 EOF
 }
-output "lambda_role_arn" {
-  value = "${aws_iam_role.lambda_role.name}"
+output "runcommand_helper_lambda_role_arn" {
+  value = "${aws_iam_role.runcommand_helper_lambda_role.name}"
 }
 
 # Lambda Function
-resource "aws_lambda_function" "lambda_function" {
+resource "aws_lambda_function" "runcommand_helper_lambda_function" {
     filename = "lambda_runcommand_helper_payload.zip"
     function_name = "garlc_runcommand_helper"
-    role = "${aws_iam_role.lambda_role.arn}"
+    role = "${aws_iam_role.runcommand_helper_lambda_role.arn}"
     handler = "runcommand_helper.handle"
     description = "Invoked by GARLC to execute RunCommand for batches of Instances"
     memory_size = 128
