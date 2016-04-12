@@ -51,7 +51,7 @@ EOF
 }
 
 # Add an SSM Policy
-resource "aws_iam_role_policy" "ssm_policy" {
+resource "aws_iam_role_policy" "lambda_policy" {
     name = "ssm_policy"
     role = "${aws_iam_role.lambda_role.id}"
     policy = <<EOF
@@ -61,7 +61,7 @@ resource "aws_iam_role_policy" "ssm_policy" {
     {
       "Effect": "Allow",
       "Action": [
-        "ssm:*",
+        "lambda:InvokeFunction",
         "ec2:Describe*"
       ],
       "Resource": "*"
