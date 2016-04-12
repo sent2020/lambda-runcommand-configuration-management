@@ -103,5 +103,5 @@ resource "aws_lambda_function" "lambda_function" {
     memory_size = 128
     runtime = "python2.7"
     timeout = 60
-    source_code_hash = "${base64encode(sha256(file("payload.zip")))}"
+    source_code_hash = "${base64sha256(file("payload.zip"))}"
 }
