@@ -50,9 +50,8 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
 EOF
 }
 
-# Add an SSM Policy
 resource "aws_iam_role_policy" "lambda_policy" {
-    name = "ssm_policy"
+    name = "lambda_policy"
     role = "${aws_iam_role.lambda_role.id}"
     policy = <<EOF
 {
