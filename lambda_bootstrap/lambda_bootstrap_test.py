@@ -2,19 +2,20 @@
 Unit Tests for trigger_run_command Lambda function
 """
 from mock import patch, MagicMock
-from lambda_bootstrap import find_bucket
 from aws_lambda_sample_events import SampleEvent
 from botocore.exceptions import ClientError
+from lambda_bootstrap import find_bucket
 from lambda_bootstrap import is_a_garlc_instance
 from lambda_bootstrap import find_newest_artifact
 from lambda_bootstrap import get_instance_id
 from lambda_bootstrap import resources_exist
 from lambda_bootstrap import send_run_command
+from lambda_bootstrap import handle
 
 @patch('boto3.client')
 def test_find_bucket(mock_client):
     """
-    Test the find_bucket function with valid event
+    Test the find_bucket function with valid input
     """
     pipeline_object = {
         "pipeline": {
@@ -151,11 +152,29 @@ def test_get_instance_id(mock_event):
 @patch('boto3.client')
 def test_resources_exist(mock_event):
     """
-    tests resources_exist function returns false when either arg is null
+    tests resources_exist function
     """
     instance_id = "i-12345678"
     bucket = "buckette"
     assert resources_exist(instance_id, bucket) is True
+
+@patch('boto3.client')
+def test_resources_exist_when_missing_instance_id(mock_event):
+    """
+    tests resources_exist function returns false when instance_id is blank
+    """
+    instance_id = ''
+    bucket = 'buckette'
+    assert resources_exist(instance_id, bucket) is False
+
+@patch('boto3.client')
+def test_resources_exist_when_missing_bucket(mock_event):
+    """
+    tests resources_exist function returns false when bucket is None
+    """
+    instance_id = "i-12345678"
+    bucket = None
+    assert resources_exist(instance_id, bucket) is False
 
 @patch('boto3.client')
 def test_send_run_command(mock_client):
@@ -166,3 +185,50 @@ def test_send_run_command(mock_client):
     mock_client.return_value = ssm
     ssm.send_command.return_value = True
     assert send_run_command(['i-12345678'], ['blah'])
+
+@patch('boto3.client')
+def test_send_run_command_with_clienterror(mock_client):
+    """
+    Test the send_run_command function with ClientError
+    """
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Boom!'
+        }
+    }
+    mock_client.side_effect = ClientError(err_msg, 'blah')
+    assert send_run_command('blah', 'blah') is False
+
+@patch('lambda_bootstrap.send_run_command')
+@patch('lambda_bootstrap.find_newest_artifact')
+@patch('lambda_bootstrap.is_a_garlc_instance')
+@patch('lambda_bootstrap.find_bucket')
+def test_handle(mock_find_bucket, mock_is_instance, mock_artifact, mock_ssm):
+    """
+    Test the handle function with valid input
+    """
+    event = SampleEvent('cloudwatch_events')
+    mock_find_bucket.return_value = 'buckette'
+    mock_is_instance.return_value = True
+    mock_artifact.return_value = 's3://blah/blah.zip'
+    mock_ssm.return_value = True
+    assert handle(event.event, 'blah') is True
+
+@patch('lambda_bootstrap.find_bucket')
+def test_handle_with_invalid_bucket(mock_find_bucket):
+    """
+    Test the handle function with invalid bucket
+    """
+    event = SampleEvent('cloudwatch_events')
+    mock_find_bucket.return_value = ''
+    assert handle(event.event, 'blah') is False
+
+@patch('lambda_bootstrap.find_bucket')
+def test_handle_with_invalid_event(mock_find_bucket):
+    """
+    Test the handle function with invalid event
+    """
+    event = 'blah'
+    mock_find_bucket.return_value = 'buckette'
+    assert handle(event, 'blah') is False
