@@ -115,15 +115,13 @@ def test_find_instances_boto_error(mock_client):
     """
     Test the find_instances function when a boto exception occurs
     """
-    ec2 = MagicMock()
     err_msg = {
         'Error': {
             'Code': 400,
             'Message': 'Boom!'
         }
     }
-    mock_client.return_value = ec2
-    ec2.instances.side_effect = ClientError(err_msg, 'Test')
+    mock_client.side_effect = ClientError(err_msg, 'Test')
     assert find_instances() == []
 
 @patch('boto3.resources.collection.ResourceCollection.filter')
@@ -171,6 +169,13 @@ def test_handle_no_instances(mock_instances, mock_commands, mock_artifact,
     codepipeline = SampleEvent('codepipeline')
     assert handle(codepipeline.event, 'Test') is False
 
+def test_handle_invalid_event():
+    """
+    Test the handle function with an invalid event
+    """
+    event = {}
+    assert handle(event, 'Test') is False
+
 @patch('main.codepipeline_success')
 @patch('boto3.client')
 def test_execute_runcommand(mock_client, mock_success):
@@ -186,10 +191,25 @@ def test_execute_runcommand(mock_client, mock_success):
     job_id = 1
     assert execute_runcommand(chunked_instance_ids, commands, job_id) is True
 
+@patch('main.codepipeline_failure')
+@patch('boto3.client')
+def test_execute_runcommand_with_failed_status(mock_client, mock_failure):
+    """
+    Test the execute_runcommand function with a failed status code
+    """
+    client = MagicMock()
+    mock_client.return_value = client
+    client.invoke_async.return_value = {"Status": 400}
+    mock_failure.return_value = True
+    chunked_instance_ids = ['abcdef-12345']
+    commands = ['blah']
+    job_id = 1
+    assert execute_runcommand(chunked_instance_ids, commands, job_id) is False
+
 @patch('boto3.client')
 def test_execute_runcommand_with_clienterror(mock_client):
     """
-    Test the execute_runcommand function with valid input
+    Test the execute_runcommand function with a ClientError
     """
     err_msg = {
         'Error': {
