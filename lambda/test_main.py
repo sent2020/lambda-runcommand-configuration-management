@@ -10,7 +10,6 @@ from main import ssm_commands
 from main import codepipeline_success
 from main import codepipeline_failure
 from main import find_instances
-from main import send_run_command
 from main import handle
 from main import execute_runcommand
 from main import find_instance_ids
@@ -22,7 +21,8 @@ def test_find_artifact():
     Test the find_artifact function with valid event
     """
     codepipeline = SampleEvent('codepipeline')
-    assert find_artifact(codepipeline.event) == 's3://codepipeline-us-east-1-123456789000/pipeline/MyApp/random.zip'
+    assert find_artifact(codepipeline.event) == \
+        's3://codepipeline-us-east-1-123456789000/pipeline/MyApp/random.zip'
 
 def test_find_artifact_invalid():
     """
@@ -137,30 +137,6 @@ def test_find_instance_ids(mock_resource):
     mock_resource.return_value = instance
     assert find_instance_ids('blah') == [instance_id]
 
-@patch('boto3.client')
-def test_send_run_command(mock_client):
-    """
-    Test the send_run_command function without errors
-    """
-    ssm = MagicMock()
-    mock_client.return_value = ssm
-    ssm.send_command.return_value = True
-    assert send_run_command(['abcdef-12345'], ['blah'])
-
-@patch('boto3.client')
-def test_send_run_command_invalid(mock_client):
-    """
-    Test the send_run_command function when a boto exception occurs
-    """
-    err_msg = {
-        'Error': {
-            'Code': 400,
-            'Message': 'Boom!'
-        }
-    }
-    mock_client.side_effect = ClientError(err_msg, 'Test')
-    assert send_run_command(['abcdef-12345'], ['blah']) is False
-
 @patch('main.codepipeline_success')
 @patch('main.execute_runcommand')
 @patch('main.find_artifact')
@@ -196,26 +172,32 @@ def test_handle_no_instances(mock_instances, mock_commands, mock_artifact,
     assert handle(codepipeline.event, 'Test') is False
 
 @patch('main.codepipeline_success')
-@patch('main.send_run_command')
-def test_execute_runcommand(mock_run_command, mock_success):
+@patch('boto3.client')
+def test_execute_runcommand(mock_client, mock_success):
     """
     Test the execute_runcommand function with valid input
     """
-    mock_run_command.return_value = True
+    client = MagicMock()
+    mock_client.return_value = client
+    client.invoke_async.return_value = {"Status": 202}
     mock_success.return_value = True
     chunked_instance_ids = ['abcdef-12345']
     commands = ['blah']
     job_id = 1
-    assert execute_runcommand(chunked_instance_ids, commands, job_id)
+    assert execute_runcommand(chunked_instance_ids, commands, job_id) is True
 
-@patch('main.codepipeline_failure')
-@patch('main.send_run_command')
-def test_execute_runcommand_failed(mock_run_command, mock_failure):
+@patch('boto3.client')
+def test_execute_runcommand_with_clienterror(mock_client):
     """
     Test the execute_runcommand function with valid input
     """
-    mock_run_command.return_value = False
-    mock_failure.return_value = True
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Boom!'
+        }
+    }
+    mock_client.side_effect = ClientError(err_msg, 'Test')
     chunked_instance_ids = ['abcdef-12345']
     commands = ['blah']
     job_id = 1
