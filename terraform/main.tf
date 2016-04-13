@@ -19,7 +19,6 @@ module "launch_configuration" {
   source = "./lc"
   iam_instance_profile = "${module.instance_profile.profile_name}"
   region = "${var.region}"
-  key_name = "${var.key_name}"
   vpc_id = "${module.vpc.vpc_id}"
 }
 
