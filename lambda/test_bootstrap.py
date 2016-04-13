@@ -37,7 +37,7 @@ def test_find_bucket_with_typeerror(mock_client):
     codepipeline = MagicMock()
     mock_client.return_value = codepipeline
     codepipeline.get_pipeline.return_value = {'blah'}
-    assert find_bucket() == False
+    assert find_bucket() is False
 
 @patch('boto3.client')
 def test_find_bucket_with_keyerror(mock_client):
@@ -47,7 +47,7 @@ def test_find_bucket_with_keyerror(mock_client):
     codepipeline = MagicMock()
     mock_client.return_value = codepipeline
     codepipeline.get_pipeline.return_value = {"blah": "blah"}
-    assert find_bucket() == False
+    assert find_bucket() is False
 
 @patch('boto3.client')
 def test_find_bucket_with_clienterror(mock_client):
