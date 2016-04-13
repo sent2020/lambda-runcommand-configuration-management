@@ -31,6 +31,38 @@ def test_send_run_command_with_clienterror(mock_client):
     mock_client.side_effect = ClientError(err_msg, 'blah')
     assert send_run_command('blah', 'blah') is False
 
+@patch('runcommand_helper.send_run_command')
+@patch('boto3.client')
+def test_send_run_command_with_throttlingexception(mock_client, mock_run_command):
+    """
+    Test the send_run_command function with a ThrottlingException
+    """
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'ThrottlingException'
+        }
+    }
+    ssm = MagicMock()
+    mock_client.return_value = ssm
+    ssm.send_command.side_effect = ClientError(err_msg, 'blah')
+    assert send_run_command('blah', 'blah') is not False
+
+@patch('boto3.client')
+def test_send_run_command_with_clienterror_during_send_command(mock_client):
+    """
+    Test the send_run_command function with a ClientError from send_command
+    """
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Boom!'
+        }
+    }
+    ssm = MagicMock()
+    mock_client.return_value = ssm
+    ssm.send_command.side_effect = ClientError(err_msg, 'blah')
+    assert send_run_command('blah', 'blah') is False
 
 def test_invoke_lambda_with_no_chunks_remaining():
     """
@@ -56,6 +88,21 @@ def test_invoke_lambda_with_bad_status_code(mock_client):
     client = MagicMock()
     mock_client.return_value = client
     client.invoke_async.return_value = {"Status": 400}
+    assert invoke_lambda([["blah"]], ["blah"]) is False
+
+@patch('runcommand_helper.invoke_lambda')
+@patch('boto3.client')
+def test_invoke_lambda_with_clienterror(mock_client, mock_invoke):
+    """
+    Test invoke_lambda with valid input and a ClientError
+    """
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Boom!'
+        }
+    }
+    mock_client.side_effect = ClientError(err_msg, 'blah')
     assert invoke_lambda([["blah"]], ["blah"]) is False
 
 @patch('runcommand_helper.invoke_lambda')

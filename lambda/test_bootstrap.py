@@ -210,6 +210,39 @@ def test_send_run_command_with_clienterror(mock_client):
     mock_client.side_effect = ClientError(err_msg, 'blah')
     assert send_run_command('blah', 'blah') is False
 
+@patch('boto3.client')
+def test_send_run_command_with_clienterror_during_send_command(mock_client):
+    """
+    Test the send_run_command function with a ClientError from send_command
+    """
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'Boom!'
+        }
+    }
+    ssm = MagicMock()
+    mock_client.return_value = ssm
+    ssm.send_command.side_effect = ClientError(err_msg, 'blah')
+    assert send_run_command('blah', 'blah') is False
+
+@patch('bootstrap.send_run_command')
+@patch('boto3.client')
+def test_send_run_command_with_throttlingexception(mock_client, mock_run_command):
+    """
+    Test the send_run_command function with a ThrottlingException
+    """
+    err_msg = {
+        'Error': {
+            'Code': 400,
+            'Message': 'ThrottlingException'
+        }
+    }
+    ssm = MagicMock()
+    mock_client.return_value = ssm
+    ssm.send_command.side_effect = ClientError(err_msg, 'blah')
+    assert send_run_command('blah', 'blah') is not False
+
 @patch('bootstrap.send_run_command')
 @patch('bootstrap.find_newest_artifact')
 @patch('bootstrap.is_a_garlc_instance')
