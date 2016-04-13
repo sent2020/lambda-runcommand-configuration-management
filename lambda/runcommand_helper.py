@@ -83,6 +83,8 @@ def handle(event, _context):
     LOGGER.info(event)
     try:
         chunked_instance_ids = event['ChunkedInstanceIds']
+        LOGGER.debug('==========Chunks remaining:')
+        LOGGER.debug(len(chunked_instance_ids))
         commands = event['Commands']
     except (TypeError, KeyError) as err:
         LOGGER.error("Could not parse event!\n%s", err)
@@ -91,8 +93,8 @@ def handle(event, _context):
     # We work on one chunk at a time until there are no more chunks left.
     # Each chunk is handled by a new AWS Lambda function.
     instance_ids = chunked_instance_ids.pop(0)
-    LOGGER.info('==========Instances in this chunk:')
-    LOGGER.info(instance_ids)
+    LOGGER.debug('==========Instances in this chunk:')
+    LOGGER.debug(instance_ids)
     send_run_command(instance_ids, commands)
     invoke_lambda(chunked_instance_ids, commands)
     return True
