@@ -7,7 +7,6 @@ resource "aws_launch_configuration" "garlc" {
   security_groups = [
     "${aws_security_group.garlc_demo_sg.id}"
   ]
-  key_name = "${var.key_name}"
   iam_instance_profile = "${var.iam_instance_profile}"
 }
 output "lcid" {

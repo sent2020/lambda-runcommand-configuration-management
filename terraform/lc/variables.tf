@@ -7,6 +7,5 @@ variable "amis" {
   }
 }
 variable "iam_instance_profile" {}
-variable "key_name" {}
 variable "region" {}
 variable "vpc_id" {}
