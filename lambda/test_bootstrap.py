@@ -4,13 +4,13 @@ Unit Tests for trigger_run_command Lambda function
 from mock import patch, MagicMock
 from aws_lambda_sample_events import SampleEvent
 from botocore.exceptions import ClientError
-from lambda_bootstrap import find_bucket
-from lambda_bootstrap import is_a_garlc_instance
-from lambda_bootstrap import find_newest_artifact
-from lambda_bootstrap import get_instance_id
-from lambda_bootstrap import resources_exist
-from lambda_bootstrap import send_run_command
-from lambda_bootstrap import handle
+from bootstrap import find_bucket
+from bootstrap import is_a_garlc_instance
+from bootstrap import find_newest_artifact
+from bootstrap import get_instance_id
+from bootstrap import resources_exist
+from bootstrap import send_run_command
+from bootstrap import handle
 
 @patch('boto3.client')
 def test_find_bucket(mock_client):
@@ -210,10 +210,10 @@ def test_send_run_command_with_clienterror(mock_client):
     mock_client.side_effect = ClientError(err_msg, 'blah')
     assert send_run_command('blah', 'blah') is False
 
-@patch('lambda_bootstrap.send_run_command')
-@patch('lambda_bootstrap.find_newest_artifact')
-@patch('lambda_bootstrap.is_a_garlc_instance')
-@patch('lambda_bootstrap.find_bucket')
+@patch('bootstrap.send_run_command')
+@patch('bootstrap.find_newest_artifact')
+@patch('bootstrap.is_a_garlc_instance')
+@patch('bootstrap.find_bucket')
 def test_handle(mock_find_bucket, mock_is_instance, mock_artifact, mock_ssm):
     """
     Test the handle function with valid input
@@ -225,7 +225,7 @@ def test_handle(mock_find_bucket, mock_is_instance, mock_artifact, mock_ssm):
     mock_ssm.return_value = True
     assert handle(event.event, 'blah') is True
 
-@patch('lambda_bootstrap.find_bucket')
+@patch('bootstrap.find_bucket')
 def test_handle_with_invalid_bucket(mock_find_bucket):
     """
     Test the handle function with invalid bucket
@@ -234,7 +234,7 @@ def test_handle_with_invalid_bucket(mock_find_bucket):
     mock_find_bucket.return_value = ''
     assert handle(event.event, 'blah') is False
 
-@patch('lambda_bootstrap.find_bucket')
+@patch('bootstrap.find_bucket')
 def test_handle_with_invalid_event(mock_find_bucket):
     """
     Test the handle function with invalid event
