@@ -29,7 +29,6 @@ def send_run_command(instance_ids, commands):
         ssm.send_command(
             InstanceIds=instance_ids,
             DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=120, # Seconds to connect to a host, 30 is the min allowed
             Parameters={
                 'commands': commands,
                 'executionTimeout': ['600'] # Seconds all commands have to complete in
