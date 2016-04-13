@@ -104,7 +104,7 @@ def break_instance_ids_into_chunks(instance_ids):
     """
     Returns successive chunks from instance_ids
     """
-    size = 25
+    size = 3
     chunks = []
     for i in range(0, len(instance_ids), size):
         chunks.append(instance_ids[i:i + size])
