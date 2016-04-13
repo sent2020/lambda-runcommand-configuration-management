@@ -121,7 +121,7 @@ resource "aws_lambda_function" "bootstrap_lambda_function" {
   filename = "lambda_bootstrap_payload.zip"
   function_name = "garlc_bootstrap"
   role = "${aws_iam_role.bootstrap_lambda_role.arn}"
-  handler = "lambda_bootstrap.handle"
+  handler = "bootstrap.handle"
   description = "Bootstraps new instances with GARLC"
   memory_size = 128
   runtime = "python2.7"
