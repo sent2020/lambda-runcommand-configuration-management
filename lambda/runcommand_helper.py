@@ -57,8 +57,9 @@ def invoke_lambda(chunks, commands):
             client = boto3.client('lambda')
         except ClientError as err:
             # Log the error and keep trying until we timeout
-            LOGGER.error("Failed to created a Lambda client!\n%s", err)
+            LOGGER.error("Failed to create a Lambda client!\n%s", err)
             invoke_lambda(chunks, commands)
+            return False
 
         event = {
             "ChunkedInstanceIds": chunks,
