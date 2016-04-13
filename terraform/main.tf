@@ -10,10 +10,6 @@ module "lambda" {
   source = "./lambda"
 }
 
-module "lambda_bootstrap" {
-  source = "./lambda_bootstrap"
-}
-
 module "vpc" {
   source = "./vpc"
   region = "${var.region}"
@@ -23,7 +19,6 @@ module "launch_configuration" {
   source = "./lc"
   iam_instance_profile = "${module.instance_profile.profile_name}"
   region = "${var.region}"
-  key_name = "${var.key_name}"
   vpc_id = "${module.vpc.vpc_id}"
 }
 

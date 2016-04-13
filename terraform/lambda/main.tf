@@ -94,7 +94,7 @@ output "lambda_role_arn" {
 
 # Lambda Function
 resource "aws_lambda_function" "lambda_function" {
-    filename = "payload.zip"
+    filename = "lambda_main_payload.zip"
     function_name = "garlc"
     role = "${aws_iam_role.lambda_role.arn}"
     handler = "main.handle"
@@ -102,5 +102,5 @@ resource "aws_lambda_function" "lambda_function" {
     memory_size = 256
     runtime = "python2.7"
     timeout = 300
-    source_code_hash = "${base64sha256(file("payload.zip"))}"
+    source_code_hash = "${base64sha256(file("lambda_main_payload.zip"))}"
 }
