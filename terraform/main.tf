@@ -10,10 +10,6 @@ module "lambda" {
   source = "./lambda"
 }
 
-module "lambda_bootstrap" {
-  source = "./lambda_bootstrap"
-}
-
 module "vpc" {
   source = "./vpc"
   region = "${var.region}"
