@@ -1,11 +1,13 @@
 """
-Triggers Run Command on all instances with tag has_ssm_agent set to true.
+Triggers RunCommand on all instances with tag has_ssm_agent set to true.
 Fetches artifact from S3 via CodePipeline, extracts the contents, and finally
-run Ansible locally on the instance to configure itself.
+runs Ansible locally on the instance to configure itself.  Uses
+runcommand_helper.py to actually execute RunCommand.
 joshcb@amazon.com
 v1.1.0
 """
 from __future__ import print_function
+import json
 import datetime
 import logging
 from botocore.exceptions import ClientError
@@ -100,9 +102,9 @@ def find_instance_ids(filters):
 
 def break_instance_ids_into_chunks(instance_ids):
     """
-    Returns successive chunks of 50 from instance_ids
+    Returns successive chunks from instance_ids
     """
-    size = 50
+    size = 3
     chunks = []
     for i in range(0, len(instance_ids), size):
         chunks.append(instance_ids[i:i + size])
@@ -110,38 +112,29 @@ def break_instance_ids_into_chunks(instance_ids):
 
 def execute_runcommand(chunked_instance_ids, commands, job_id):
     """
-    Execute RunCommand for each chunk of instances
+    Handoff RunCommand to the RunCommand Helper AWS Lambda function
     """
-    success = True
-    for chunk in chunked_instance_ids:
-        if send_run_command(chunk, commands) is False:
-            success = False # continue iterating but make sure we fail the pipeline
+    try:
+        client = boto3.client('lambda')
+    except ClientError as err:
+        LOGGER.error("Failed to created a Lambda client!\n%s", err)
+        codepipeline_failure(job_id, err)
+        return False
 
-    if success:
+    event = {
+        "ChunkedInstanceIds": chunked_instance_ids,
+        "Commands": commands
+    }
+    response = client.invoke_async(
+        FunctionName='garlc_runcommand_helper',
+        InvokeArgs=json.dumps(event)
+    )
+
+    if response['Status'] is 202:
         codepipeline_success(job_id)
         return True
     else:
-        codepipeline_failure(job_id, 'Not all RunCommand calls completed, see log.')
-        return False
-
-def send_run_command(instance_ids, commands):
-    """
-    Sends the Run Command API Call
-    """
-    try:
-        ssm = boto3.client('ssm')
-        ssm.send_command(
-            InstanceIds=instance_ids,
-            DocumentName='AWS-RunShellScript',
-            TimeoutSeconds=600,
-            Parameters={
-                'commands': commands,
-                'executionTimeout': ['600']
-            }
-        )
-        return True
-    except ClientError as err:
-        LOGGER.error("Run Command Failed!\n%s", str(err))
+        codepipeline_failure(job_id, response)
         return False
 
 def handle(event, _context):
@@ -153,6 +146,7 @@ def handle(event, _context):
         job_id = event['CodePipeline.job']['id']
     except KeyError as err:
         LOGGER.error("Could not retrieve CodePipeline Job ID!\n%s", err)
+        return False
 
     instance_ids = find_instances()
     commands = ssm_commands(find_artifact(event))

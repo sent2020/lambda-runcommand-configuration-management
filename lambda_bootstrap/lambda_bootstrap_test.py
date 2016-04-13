@@ -75,6 +75,16 @@ def test_is_a_garlc_instance(mock_client):
     assert is_a_garlc_instance("instance") is True
 
 @patch('boto3.client')
+def test_is_a_garlc_instance_except_when_its_not(mock_client):
+    """
+    Test is_a_garlc_instance returns false when it's missing the tag
+    """
+    ec2 = MagicMock()
+    mock_client.return_value = ec2
+    ec2.describe_instances.return_value = ""
+    assert is_a_garlc_instance("instance") is False
+
+@patch('boto3.client')
 def test_is_a_garlc_instance_with_clienterror(mock_client):
     """
     Test is_a_garlc_instance with ClientError
