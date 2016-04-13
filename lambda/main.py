@@ -4,7 +4,7 @@ Fetches artifact from S3 via CodePipeline, extracts the contents, and finally
 runs Ansible locally on the instance to configure itself.  Uses
 runcommand_helper.py to actually execute RunCommand.
 joshcb@amazon.com
-v1.1.0
+v1.0.0
 """
 from __future__ import print_function
 import json
