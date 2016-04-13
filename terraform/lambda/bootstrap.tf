@@ -118,7 +118,7 @@ output "bootstrap_lambda_role_arn" {
 
 # Lambda Function
 resource "aws_lambda_function" "bootstrap_lambda_function" {
-  filename = "lambda_bootstrap_function_payload.zip"
+  filename = "lambda_bootstrap_payload.zip"
   function_name = "garlc_bootstrap"
   role = "${aws_iam_role.bootstrap_lambda_role.arn}"
   handler = "lambda_bootstrap.handle"
@@ -126,7 +126,7 @@ resource "aws_lambda_function" "bootstrap_lambda_function" {
   memory_size = 128
   runtime = "python2.7"
   timeout = 300
-  source_code_hash = "${base64sha256(file("lambda_bootstrap_function_payload.zip"))}"
+  source_code_hash = "${base64sha256(file("lambda_bootstrap_payload.zip"))}"
 }
 
 output "bootstrap_lambda_name" {
