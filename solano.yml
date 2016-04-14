@@ -1,0 +1,8 @@
+tests:
+  - ansible-playbook -i ci/inventory ansible/playbook.yml --check
+  - py.test lambda/ --cov-report term-missing --cov lambda/
+python:
+  python_version: 2.7
+  pip_requirements_file:
+    - requirements.txt
+    - ci/requirements.txt
