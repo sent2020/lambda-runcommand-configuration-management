@@ -4,3 +4,7 @@ python:
 tests:
   - ansible-playbook -i ci_ansible_inventory ansible/playbook.yml --check
   - py.test lambda/ --cov-report term-missing --cov lambda/
+coverage:
+  version: 2
+  enabled: true
+  ratchet: 90
