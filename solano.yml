@@ -1,0 +1,10 @@
+python:
+  python_version: 2.7
+  pip_requirements_file: requirements.txt
+tests:
+  - ansible-playbook -i ci_ansible_inventory ansible/playbook.yml --check
+  - py.test lambda/ --cov-report term-missing --cov lambda/
+coverage:
+  version: 2
+  enabled: true
+  ratchet: 90
