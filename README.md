@@ -1,18 +1,14 @@
 # What's That Smell?
-This demonstrates serverless, SSH-less, continuous configuration management.  Affectionately referred to as GARLC:
+Project GARLC is made up of:
+* Git – for configuration storage and version control.  GitHub is used for the project currently but you could also use CodeCommit.
+* Ansible – for configuration management.  Chef, Puppet, or Salt using their respective “masterless” or “solo” modes could also be used.
+* Amazon EC2 Run Command – for executing Ansible without requiring SSH access to the instances.
+* AWS Lambda – for executing logic and invoking RunCommand.
+* AWS CodePipeline – for receiving changes from git and triggering Lambda.
 
-GitHub  
-Ansible  
-RunCommand  
-Lambda  
-CodePipeline
+The general idea is that configuration management is now done in the same way we do continuous delivery of applications today.  What makes GARLC really exciting though is that there are no central control/orchestration servers to maintain and we no longer need SSH access to the instances to configure them.  There are two modes to Project GARLC:  continuous and bootstrap.
 
-1. Create/Update Ansible playbook(s)
-* `git push` the playbook(s) into GitHub
-* CodePipeline picks up your changes
-* Lambda tells RunCommand to trigger your instances to self configure using Ansible
-* ???
-* Profit
+**Blog post for detailed introduction coming soon**
 
 # Setup Instructions for a Demo
 **WARNING:  Using this code may cost you money.  Please be sure you understand your current usage and the costs associated with this reference code before launching in your AWS account.**
@@ -30,7 +26,15 @@ CodePipeline
     * Input should be "MyApp".
 * Update something in the repository (e.g. add something to an Ansible playbook) and then commit to the master branch and watch your changes flow and your instances update automagically :fire:.
 
-# Notes
-* Instances need a tag of "has_ssm_agent" with a value of "true" or "True".
-* Instances must have an "Ansible_Roles" tag (case sensitive) with a list of role names as a comma separated list.
-  * These roles should correspond to Ansible roles in the playbook to be useful.
+# Theme Song
+No ssh here,  
+sudo git me a beer,   
+while I Ansible all the things.
+
+Swaggin with RunCommand,  
+Lambda don’t move a hand,   
+flowin through the CodePipeline.  
+
+Smells like GARLC, GARLC, GARLC…  
+Smells like GARLC, GARLC, GARLC…  
+Smells like GARLC, GARLC, GARLC…  
