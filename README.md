@@ -5,7 +5,7 @@ Project GARLC is made up of:
 * [Git](https://git-scm.com/) – for configuration storage and version control.  GitHub is used for the project currently but you could also use [AWS CodeCommit](https://aws.amazon.com/codecommit/).
 * [Ansible](https://www.ansible.com/) – for configuration management.  Chef, Puppet, or Salt using their respective “masterless” or “solo” modes could also be used.
 * [Amazon EC2 Run Command](https://aws.amazon.com/ec2/run-command/) – for executing Ansible without requiring SSH access to the instances.
-* [AWS Lambda](https://aws.amazon.com/lambda/) – for executing logic and invoking RunCommand..
+* [AWS Lambda](https://aws.amazon.com/lambda/) – for executing logic and invoking RunCommand.
 * [AWS CodePipeline](https://aws.amazon.com/codepipeline/) – for receiving changes from git and triggering Lambda.
 
 The general idea is that configuration management is now done in the same way we do continuous delivery of applications today.  What makes GARLC really exciting though is that there are no central control/orchestration servers to maintain and we no longer need SSH access to the instances to configure them.  There are two modes to Project GARLC:  continuous and bootstrap.
